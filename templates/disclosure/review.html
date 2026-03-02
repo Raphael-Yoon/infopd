@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+{% block title %}{{ company.name }} {{ year }}년 — 공시 자료 검토{% endblock %}
+{% block content %}
+
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">홈</a></li>
+        <li class="breadcrumb-item">
+            <a href="/disclosure/{{ company.id }}/{{ year }}">{{ company.name }} / {{ year }}년</a>
+        </li>
+        <li class="breadcrumb-item active">검토</li>
+    </ol>
+</nav>
+
+<!-- 헤더 -->
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h4 class="fw-bold mb-1">{{ company.name }} — {{ year }}년도 정보보호공시</h4>
+        <div class="d-flex gap-3 text-muted small">
+            <span>진행률: <strong class="text-dark">{{ session.completion_rate }}%</strong></span>
+            {% if ratios.investment_ratio %}
+            <span>투자 비율: <strong class="text-primary">{{ ratios.investment_ratio }}%</strong></span>
+            {% endif %}
+            {% if ratios.personnel_ratio %}
+            <span>인력 비율: <strong class="text-primary">{{ ratios.personnel_ratio }}%</strong></span>
+            {% endif %}
+        </div>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="/disclosure/{{ company.id }}/{{ year }}/work" class="btn btn-outline-secondary btn-sm">← 돌아가기</a>
+        {% if session.status != 'submitted' %}
+        <form action="/disclosure/{{ company.id }}/{{ year }}/submit" method="post"
+              onsubmit="return confirm('공시 자료를 제출하시겠습니까?\n제출 후에는 수정이 제한됩니다.')">
+            <button type="submit" class="btn btn-success btn-sm"
+                    {% if session.completion_rate < 100 %}disabled title="모든 항목을 완료해야 제출 가능합니다."{% endif %}>
+                공시 제출
+            </button>
+        </form>
+        {% else %}
+        <span class="badge bg-success fs-6 py-2 px-3">제출완료</span>
+        {% endif %}
+    </div>
+</div>
+
+{% if session.completion_rate < 100 %}
+<div class="alert alert-warning small">
+    미완료 항목이 있습니다. 작업 화면으로 돌아가 모든 항목을 입력한 후 제출하세요.
+</div>
+{% endif %}
+
+<!-- 카테고리별 답변 검토 -->
+{% for cat in categories %}
+<div class="card shadow-sm mb-4">
+    <div class="card-header fw-bold bg-dark text-white py-2">
+        {{ cat.id }}. {{ cat.name }}
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+            <tbody>
+            {% for q in cat.questions %}
+            {% if q.type != 'group' %}
+            <tr class="{% if not q.is_active and not q.is_skipped %}table-light text-muted{% endif %}">
+                <td class="ps-3" style="width:100px">
+                    <small class="text-muted">{{ q.display_number }}</small>
+                </td>
+                <td style="width:40%">
+                    <small class="{% if q.level > 1 %}ms-{{ (q.level - 1) * 3 }}{% endif %}">
+                        {{ q.text }}
+                    </small>
+                </td>
+                <td>
+                    {% if q.is_skipped %}
+                        <span class="badge bg-light text-secondary">해당없음</span>
+                    {% elif answers.get(q.id) %}
+                        {% set val = answers.get(q.id) %}
+                        {% if q.type == 'yes_no' %}
+                            <span class="badge {% if val == 'YES' %}bg-success{% else %}bg-danger{% endif %}">
+                                {{ '예' if val == 'YES' else '아니오' }}
+                            </span>
+                        {% elif q.type == 'number' %}
+                            <span class="fw-semibold">
+                                {% if '투자액' in q.text or '인건비' in q.text or '감가상각' in q.text or '비용' in q.text %}
+                                    {{ "{:,.0f}".format(val | float) }}원
+                                {% else %}
+                                    {{ val }}
+                                {% endif %}
+                            </span>
+                        {% elif q.type == 'table' %}
+                            <span class="badge bg-info text-dark">테이블 입력됨</span>
+                        {% elif q.type == 'checkbox' %}
+                            <small>{{ val }}</small>
+                        {% else %}
+                            <small>{{ val[:80] }}{% if val|length > 80 %}...{% endif %}</small>
+                        {% endif %}
+                    {% else %}
+                        <span class="badge bg-warning text-dark">미입력</span>
+                    {% endif %}
+                </td>
+                <td style="width:150px">
+                    {% if evidence_map.get(q.id) %}
+                    <small class="text-success">
+                        증빙 {{ evidence_map.get(q.id)|length }}건
+                    </small>
+                    {% endif %}
+                    <a href="/disclosure/{{ company.id }}/{{ year }}/work?category={{ q.category_id }}#qblock-{{ q.id }}"
+                       class="btn btn-sm btn-link p-0 ms-1 small text-muted">수정</a>
+                </td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endfor %}
+
+<!-- 하단 제출 버튼 -->
+{% if session.status != 'submitted' %}
+<div class="text-end mt-4">
+    <form action="/disclosure/{{ company.id }}/{{ year }}/submit" method="post"
+          onsubmit="return confirm('공시 자료를 제출하시겠습니까?')">
+        <button type="submit" class="btn btn-success px-4"
+                {% if session.completion_rate < 100 %}disabled{% endif %}>
+            공시 제출
+        </button>
+    </form>
+</div>
+{% endif %}
+
+{% endblock %}

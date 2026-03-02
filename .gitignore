@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# 데이터베이스 (민감 데이터)
+infopd.db
+*.db
+*.sqlite3
+
+# 업로드 파일 (증빙 자료)
+uploads/
+
+# 환경 설정
+.env
+*.env
+credentials.json
+token.pickle
+
+# 로그
+logs/
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# 임시/테스트 파일
+test_*.py
+*_test.py

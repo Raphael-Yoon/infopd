@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% block title %}infopd — 정보보호공시 관리{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0 fw-bold">회사별 공시 현황</h4>
+    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addCompanyModal">
+        + 회사 등록
+    </button>
+</div>
+
+{% if not companies %}
+<div class="text-center py-5 text-muted">
+    <p class="fs-5">등록된 회사가 없습니다.</p>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCompanyModal">
+        첫 번째 회사 등록
+    </button>
+</div>
+{% else %}
+<div class="row g-3">
+{% for company in companies %}
+<div class="col-12">
+    <div class="card shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center py-2">
+            <span class="fw-bold">{{ company.name }}</span>
+            <div class="d-flex gap-2 align-items-center">
+                <form action="/company/{{ company.id }}/year/add" method="post" class="d-flex gap-1">
+                    <input type="number" name="year" class="form-control form-control-sm"
+                           style="width:90px" min="2000" max="2100" value="{{ current_year }}" required>
+                    <button class="btn btn-outline-secondary btn-sm">연도 추가</button>
+                </form>
+                <form action="/company/{{ company.id }}/delete" method="post"
+                      onsubmit="return confirm('{{ company.name }}의 모든 데이터를 삭제하시겠습니까?')">
+                    <button class="btn btn-outline-danger btn-sm">삭제</button>
+                </form>
+            </div>
+        </div>
+
+        {% if company.targets %}
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0 align-middle">
+                <thead class="table-light">
+                <tr>
+                    <th class="ps-3" style="width:80px">연도</th>
+                    <th>진행률</th>
+                    <th style="width:90px">상태</th>
+                    <th style="width:220px">작업</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for t in company.targets %}
+                <tr>
+                    <td class="ps-3 fw-bold">{{ t.year }}</td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="progress flex-grow-1" style="height:8px">
+                                <div class="progress-bar
+                                    {% if t.completion_rate == 100 %}bg-success
+                                    {% elif t.completion_rate > 0 %}bg-primary
+                                    {% else %}bg-secondary{% endif %}"
+                                    style="width:{{ t.completion_rate }}%"></div>
+                            </div>
+                            <small class="text-muted" style="min-width:32px">{{ t.completion_rate }}%</small>
+                        </div>
+                    </td>
+                    <td>
+                        {% if t.status == 'submitted' %}
+                            <span class="badge bg-success">제출완료</span>
+                        {% elif t.status == 'in_progress' %}
+                            <span class="badge bg-primary">진행중</span>
+                        {% else %}
+                            <span class="badge bg-secondary">미시작</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="d-flex gap-1">
+                            <a href="/disclosure/{{ company.id }}/{{ t.year }}"
+                               class="btn btn-sm btn-outline-primary">대시보드</a>
+                            <a href="/disclosure/{{ company.id }}/{{ t.year }}/work"
+                               class="btn btn-sm btn-primary">작업</a>
+                            <a href="/disclosure/{{ company.id }}/{{ t.year }}/review"
+                               class="btn btn-sm btn-outline-success">검토</a>
+                            <form action="/company/{{ company.id }}/year/{{ t.year }}/delete" method="post"
+                                  onsubmit="return confirm('{{ t.year }}년도 공시 데이터를 삭제하시겠습니까?')">
+                                <button class="btn btn-sm btn-outline-danger">삭제</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="card-body text-muted small py-2 ps-3">
+            등록된 연도가 없습니다. 위에서 연도를 추가하세요.
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endfor %}
+</div>
+{% endif %}
+
+<!-- 회사 등록 모달 -->
+<div class="modal fade" id="addCompanyModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <form action="/company/add" method="post">
+                <div class="modal-header">
+                    <h6 class="modal-title fw-bold">회사 등록</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <label class="form-label small">회사명</label>
+                    <input type="text" name="name" class="form-control"
+                           placeholder="회사명을 입력하세요" required autofocus>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">취소</button>
+                    <button type="submit" class="btn btn-primary btn-sm">등록</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
