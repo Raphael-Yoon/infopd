@@ -369,8 +369,6 @@
         <i class="fas fa-arrow-left text-primary"></i> 공시 현황으로
     </a>
 
-    </a>
-
     <div class="category-pills">
         {% for cat in sidebar_categories %}
         <a href="/disclosure/{{ company.id }}/{{ year }}/work?category={{ cat.id }}"
@@ -462,6 +460,64 @@
                 {% for opt in q.options_list %}
                 <label class="d-flex align-items-center gap-3 p-3 rounded-3 border" style="cursor:pointer;"><input type="radio" name="q-{{ q.id }}" value="{{ opt }}" {% if answers.get(q.id) == opt %}checked{% endif %} onchange="saveAnswer('{{ q.id }}', this.value)">{{ opt }}</label>
                 {% endfor %}
+            </div>
+
+            {% elif q.type == 'checkbox' and q.options_list %}
+            {% set checked_vals = answers.get(q.id, '[]') | from_json_or_default([]) %}
+            <div class="mt-3 d-flex flex-column gap-2" id="cb-group-{{ q.id }}">
+                {% for opt in q.options_list %}
+                <label class="d-flex align-items-center gap-3 p-3 rounded-3 border" style="cursor:pointer;">
+                    <input type="checkbox" class="cb-{{ q.id }}" value="{{ opt }}"
+                           {% if opt in checked_vals %}checked{% endif %}
+                           onchange="saveCheckbox('{{ q.id }}')">
+                    {{ opt }}
+                </label>
+                {% endfor %}
+            </div>
+
+            {% elif q.type == 'table' and q.options_list %}
+            {% set table_rows = answers.get(q.id, '[]') | from_json_or_default([]) %}
+            <div class="mt-3" id="table-wrap-{{ q.id }}">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-sm align-middle mb-2" id="tbl-{{ q.id }}">
+                        <thead class="table-light">
+                            <tr>
+                                {% for col in q.options_list %}<th class="fw-bold small text-center py-2">{{ col }}</th>{% endfor %}
+                                <th style="width:44px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-{{ q.id }}">
+                            {% if table_rows %}
+                                {% for row in table_rows %}
+                                <tr>
+                                    {% for col in q.options_list %}
+                                    <td><input type="text" class="form-control form-control-sm border-0"
+                                               value="{{ row.get(col, '') }}"
+                                               oninput="saveTable('{{ q.id }}')"></td>
+                                    {% endfor %}
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-link text-danger btn-sm p-0"
+                                                onclick="removeTableRow(this, '{{ q.id }}')">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    {% for col in q.options_list %}<td><input type="text" class="form-control form-control-sm border-0" oninput="saveTable('{{ q.id }}')"></td>{% endfor %}
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-link text-danger btn-sm p-0" onclick="removeTableRow(this, '{{ q.id }}')"><i class="fas fa-times"></i></button>
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+                <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3 fw-bold"
+                        onclick="addTableRow('{{ q.id }}', {{ q.options_list | tojson }})">
+                    <i class="fas fa-plus me-1"></i>행 추가
+                </button>
             </div>
             {% endif %}
 
@@ -560,6 +616,50 @@
 
     function deleteEvidence(qId, eid) {
         if (confirm('삭제하시겠습니까?')) fetch('/disclosure/api/evidence/' + eid, { method: 'DELETE' }).then(res => res.json()).then(data => { if (data.success) location.reload(); });
+    }
+
+    function saveCheckbox(qId) {
+        const checked = [...document.querySelectorAll(`.cb-${qId}:checked`)].map(el => el.value);
+        saveAnswer(qId, checked);
+    }
+
+    function addTableRow(qId, cols) {
+        const tbody = document.getElementById('tbody-' + qId);
+        const tr = document.createElement('tr');
+        cols.forEach(() => {
+            const td = document.createElement('td');
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'form-control form-control-sm border-0';
+            input.oninput = () => saveTable(qId);
+            td.appendChild(input);
+            tr.appendChild(td);
+        });
+        const delTd = document.createElement('td');
+        delTd.className = 'text-center';
+        delTd.innerHTML = `<button type="button" class="btn btn-link text-danger btn-sm p-0" onclick="removeTableRow(this,'${qId}')"><i class="fas fa-times"></i></button>`;
+        tr.appendChild(delTd);
+        tbody.appendChild(tr);
+        saveTable(qId);
+    }
+
+    function removeTableRow(btn, qId) {
+        btn.closest('tr').remove();
+        saveTable(qId);
+    }
+
+    function saveTable(qId) {
+        const tbl = document.getElementById('tbl-' + qId);
+        const headers = [...tbl.querySelectorAll('thead th')].slice(0, -1).map(th => th.textContent.trim());
+        const rows = [];
+        tbl.querySelectorAll('tbody tr').forEach(tr => {
+            const inputs = tr.querySelectorAll('input[type=text]');
+            const rowObj = {};
+            headers.forEach((h, i) => { rowObj[h] = inputs[i] ? inputs[i].value : ''; });
+            const hasValue = Object.values(rowObj).some(v => v.trim() !== '');
+            if (hasValue) rows.push(rowObj);
+        });
+        saveAnswer(qId, rows);
     }
 
     function toggleReferencePanel() {

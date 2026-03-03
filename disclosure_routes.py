@@ -4,10 +4,11 @@ infosd - 공시 작업 라우팅 (4+5단계)
 import uuid
 import json
 import os
+import io
 from datetime import datetime
 from werkzeug.utils import secure_filename
 from flask import (Blueprint, render_template, request, redirect,
-                   url_for, flash, jsonify, send_from_directory, abort, session)
+                   url_for, flash, jsonify, send_from_directory, abort, session, send_file)
 from db_config import get_db
 
 bp_disclosure = Blueprint('disclosure', __name__, url_prefix='/disclosure')
@@ -369,27 +370,26 @@ def work(company_id, year):
             q['is_active'] = _is_question_active(q, questions_dict, answers)
             q['is_skipped'] = _is_question_skipped(q, questions_dict, answers)
 
-        # 카테고리별 진행률 계산 (사이드바용)
-        # 전체 카테고리 목록과 각 카테고리의 통계 계산
-        cat_stats_rows = conn.execute('''
-            SELECT category_id, category, 
-                   COUNT(*) as total,
-                   SUM(CASE WHEN status='completed' OR status='skipped' THEN 1 ELSE 0 END) as done
-            FROM ipd_questions q
-            LEFT JOIN ipd_answers a ON q.id = a.question_id AND a.company_id = ? AND a.year = ?
-            WHERE q.type != 'group'
-            GROUP BY category_id
-            ORDER BY category_id
-        ''', (company_id, year)).fetchall()
-
+        # 카테고리별 진행률 계산 (사이드바용) — active/skip 로직 반영
         sidebar_categories = []
-        for r in cat_stats_rows:
+        cat_ids = sorted({q['category_id'] for q in all_questions})
+        for cat_id in cat_ids:
+            cat_qs = [q for q in all_questions if q['category_id'] == cat_id and q['type'] != 'group']
+            cat_name = next((q['category'] for q in all_questions if q['category_id'] == cat_id), '')
+            total = len(cat_qs)
+            done = 0
+            for q in cat_qs:
+                if _is_question_active(q, questions_dict, answers):
+                    if q['id'] in answers and answers[q['id']] not in (None, ''):
+                        done += 1
+                elif _is_question_skipped(q, questions_dict, answers):
+                    done += 1
             sidebar_categories.append({
-                'id': r['category_id'],
-                'name': r['category'],
-                'total': r['total'],
-                'done': r['done'],
-                'rate': int((r['done'] / r['total']) * 100) if r['total'] > 0 else 0
+                'id': cat_id,
+                'name': cat_name,
+                'total': total,
+                'done': done,
+                'rate': int((done / total) * 100) if total > 0 else 0
             })
 
         current_category_name = next((c['name'] for c in sidebar_categories if c['id'] == category_id), "Unknown")
@@ -540,11 +540,6 @@ def save_answer():
             _update_session_progress(conn, company_id, year)
 
         return jsonify({'success': True, 'answer_id': answer_id})
-
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return jsonify({'success': False, 'message': str(e)}), 500
 
     except Exception as e:
         import traceback
@@ -848,6 +843,147 @@ def get_available_years(company_id):
             return jsonify({'success': True, 'years': years})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@bp_disclosure.route('/<company_id>/<int:year>/download/excel')
+def download_excel(company_id, year):
+    """공시 자료 Excel 다운로드"""
+    try:
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+
+        with get_db() as conn:
+            company = _get_company_or_404(conn, company_id)
+            _get_target_or_404(conn, company_id, year)
+
+            all_questions = [dict(r) for r in conn.execute(
+                'SELECT * FROM ipd_questions ORDER BY category_id, sort_order'
+            ).fetchall()]
+            questions_dict = {q['id']: q for q in all_questions}
+
+            answers = {r['question_id']: r['value'] for r in conn.execute(
+                'SELECT question_id, value FROM ipd_answers WHERE company_id=? AND year=? AND deleted_at IS NULL',
+                (company_id, year)
+            ).fetchall()}
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = f"{year}년 공시"
+
+        # 스타일 정의
+        header_fill = PatternFill(start_color="1e293b", end_color="1e293b", fill_type="solid")
+        cat_fill = PatternFill(start_color="3b82f6", end_color="3b82f6", fill_type="solid")
+        header_font = Font(bold=True, color="FFFFFF", size=11)
+        normal_font = Font(size=10)
+        center_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        left_align = Alignment(horizontal="left", vertical="center", wrap_text=True)
+        thin_border = Border(
+            left=Side(style='thin'), right=Side(style='thin'),
+            top=Side(style='thin'), bottom=Side(style='thin')
+        )
+
+        # 제목 행
+        ws.merge_cells('A1:D1')
+        ws['A1'] = f"정보보호공시 — {company['name']} ({year}년)"
+        ws['A1'].font = Font(bold=True, size=14)
+        ws['A1'].alignment = center_align
+
+        # 헤더 행
+        headers = ['질문 번호', '질문 항목', '답변', '구분']
+        for col, h in enumerate(headers, 1):
+            cell = ws.cell(row=2, column=col, value=h)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = center_align
+            cell.border = thin_border
+
+        ws.column_dimensions['A'].width = 14
+        ws.column_dimensions['B'].width = 55
+        ws.column_dimensions['C'].width = 35
+        ws.column_dimensions['D'].width = 16
+        ws.row_dimensions[1].height = 30
+        ws.row_dimensions[2].height = 22
+
+        row = 3
+        current_cat = None
+        for q in all_questions:
+            if q['type'] == 'group':
+                continue
+            # 카테고리 구분 행
+            if q['category_id'] != current_cat:
+                current_cat = q['category_id']
+                ws.merge_cells(f'A{row}:D{row}')
+                cat_cell = ws.cell(row=row, column=1, value=f"▶ {q['category']}")
+                cat_cell.font = Font(bold=True, color="FFFFFF", size=10)
+                cat_cell.fill = cat_fill
+                cat_cell.alignment = left_align
+                cat_cell.border = thin_border
+                ws.row_dimensions[row].height = 18
+                row += 1
+
+            # 답변 값 처리
+            raw_val = answers.get(q['id'], '')
+            if raw_val and raw_val not in ('N/A', ''):
+                try:
+                    parsed = json.loads(raw_val)
+                    if isinstance(parsed, list) and len(parsed) > 0:
+                        if isinstance(parsed[0], dict):
+                            # table 타입: 헤더|값 형식으로 표현
+                            raw_val = '\n'.join(
+                                ' | '.join(f"{k}: {v}" for k, v in r.items())
+                                for r in parsed
+                            )
+                        else:
+                            raw_val = ', '.join(str(v) for v in parsed)
+                except (json.JSONDecodeError, TypeError):
+                    pass
+
+            status = '미작성'
+            if raw_val == 'N/A':
+                status = '해당없음'
+            elif raw_val:
+                status = '완료'
+
+            cells = [
+                ws.cell(row=row, column=1, value=q.get('display_number') or q['id']),
+                ws.cell(row=row, column=2, value=q['text']),
+                ws.cell(row=row, column=3, value=raw_val),
+                ws.cell(row=row, column=4, value=status),
+            ]
+            for cell in cells:
+                cell.font = normal_font
+                cell.alignment = left_align
+                cell.border = thin_border
+            cells[0].alignment = center_align
+
+            # 미작성 행 연한 빨강
+            if status == '미작성':
+                for cell in cells:
+                    cell.fill = PatternFill(start_color="FFF3F3", end_color="FFF3F3", fill_type="solid")
+
+            ws.row_dimensions[row].height = 18
+            row += 1
+
+        # 메모리 버퍼로 저장
+        buf = io.BytesIO()
+        wb.save(buf)
+        buf.seek(0)
+
+        filename = f"정보보호공시_{company['name']}_{year}.xlsx"
+        return send_file(
+            buf,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name=filename
+        )
+    except ImportError:
+        flash('Excel 다운로드 기능을 사용하려면 openpyxl을 설치하세요. (pip install openpyxl)', 'warning')
+        return redirect(url_for('disclosure.review', company_id=company_id, year=year))
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        flash(f'Excel 생성 중 오류: {str(e)}', 'error')
+        return redirect(url_for('disclosure.review', company_id=company_id, year=year))
 
 
 @bp_disclosure.route('/api/answers/<company_id>/<int:year>')
