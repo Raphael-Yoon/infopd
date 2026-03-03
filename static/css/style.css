@@ -1,4 +1,4 @@
-﻿/* 
+/* 
  * infosd — Official Snowball Disclosure Design System (v0.07.1)
  * Author: 개발1팀 조윤진 (Snowball UI/UX Architect)
  * Target: 100% Visual Parity with Snowball link11 System
@@ -7,40 +7,61 @@
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css');
 
 :root {
+    /* --- Light Mode (Default) --- */
     --primary-color: #3b82f6;
     --primary-dark: #2563eb;
     --accent-gradient: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
     --card-radius: 12px;
+    
     --bg-main: #f8fafc;
-    --text-dark: #1e293b;
+    --bg-surface: #ffffff;
+    --text-main: #1e293b;
     --text-muted: #64748b;
     --border-color: #e2e8f0;
+    --input-bg: #fdfdfd;
+    --header-bg: #ffffff;
+    --shadow-main: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     --header-height: 80px;
-    --snowball-dark: #334155;
-    --snowball-red: #ef4444;
+}
+
+[data-theme='dark'] {
+    /* --- Dark Mode --- */
+    --bg-main: #0f172a;
+    --bg-surface: #1e293b;
+    --text-main: #f1f5f9;
+    --text-muted: #94a3b8;
+    --border-color: #334155;
+    --input-bg: #0f172a;
+    --header-bg: #1e293b;
+    --shadow-main: 0 4px 15px rgba(0, 0, 0, 0.3);
+    
+    /* Dark mode filter for images if needed */
+    --img-brightness: 0.9;
 }
 
 body {
-    background-color: #ffffff;
-    color: var(--text-dark);
+    background-color: var(--bg-main);
+    color: var(--text-main);
     font-family: 'Pretendard', sans-serif;
     line-height: 1.6;
     margin: 0;
     padding-top: 0;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Navbar */
 .navbar {
-    background: #ffffff !important;
-    border-bottom: 2px solid #f1f5f9;
+    background: var(--header-bg) !important;
+    border-bottom: 2px solid var(--border-color);
     height: var(--header-height);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .navbar-brand {
     font-weight: 850;
     font-size: 1.5rem;
     letter-spacing: -1.2px;
-    color: #1e293b !important;
+    color: var(--text-main) !important;
 }
 
 /* Dashboard Layout */
@@ -52,19 +73,20 @@ body {
 
 /* Question Card (Snowball Master Layout) */
 .question-card {
-    background: #ffffff;
+    background: var(--bg-surface);
     border-radius: 12px;
     padding: 25px 30px;
-    border: 1px solid #dae1e7;
+    border: 1px solid var(--border-color);
     margin-bottom: 25px;
     position: relative;
-    transition: transform 0.2s ease;
+    transition: transform 0.2s ease, background-color 0.3s ease, border-color 0.3s ease;
+    box-shadow: var(--shadow-main);
 }
 
 .question-card.is-child {
     box-shadow: none !important;
-    border-color: #e2e8f0;
-    background: #ffffff;
+    border-color: var(--border-color);
+    background: var(--bg-surface);
 }
 
 .question-card.level-2 {
@@ -620,23 +642,23 @@ body {
 }
 
 .stat-card {
-    background: white;
-    border: 1px solid #e2e8f0;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
     border-radius: 16px;
     padding: 30px;
     text-align: left;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    box-shadow: var(--shadow-main);
     display: flex;
     flex-direction: column;
     gap: 12px;
     position: relative;
-    transition: all 0.3s ease;
+    transition: all 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .stat-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 15px 30px -10px rgba(59, 130, 246, 0.2);
-    border-color: #3b82f6;
+    box-shadow: var(--shadow-main);
+    border-color: var(--primary-color);
 }
 
 .stat-icon {
@@ -670,7 +692,7 @@ body {
 .stat-value {
     font-size: 2.5rem;
     font-weight: 850;
-    color: #0f172a;
+    color: var(--text-main);
     letter-spacing: -0.02em;
     display: flex;
     align-items: baseline;
@@ -692,18 +714,18 @@ body {
 }
 
 .category-card {
-    background: white;
-    border: 1px solid #e2e8f0;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
     border-radius: 16px;
     padding: 24px;
     transition: all 0.3s ease;
     cursor: pointer;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+    box-shadow: var(--shadow-main);
 }
 
 .category-card:hover {
-    border-color: #3b82f6;
-    box-shadow: 0 15px 25px -10px rgba(59, 130, 246, 0.2);
+    border-color: var(--primary-color);
+    box-shadow: var(--shadow-main);
     transform: scale(1.02);
 }
 
@@ -717,7 +739,7 @@ body {
 .category-title {
     font-size: 1.2rem;
     font-weight: 700;
-    color: #1e293b;
+    color: var(--text-main);
 }
 
 .category-progress {
@@ -754,4 +776,49 @@ body {
 .category-badge.not-started {
     background: #f1f5f9;
     color: #475569;
+}
+
+/* --- Theme Toggle Button --- */
+.theme-toggle-btn {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 2000;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 1px solid var(--border-color);
+    background: var(--bg-surface);
+    color: var(--text-main);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    box-shadow: var(--shadow-main);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.theme-toggle-btn:hover {
+    transform: scale(1.1) rotate(15deg);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+}
+
+.theme-toggle-btn .dark-icon { display: none; }
+.theme-toggle-btn .light-icon { display: block; color: #f59e0b; }
+
+[data-theme='dark'] .theme-toggle-btn .dark-icon { display: block; color: #fbbf24; }
+[data-theme='dark'] .theme-toggle-btn .light-icon { display: none; }
+[data-theme='dark'] img { filter: var(--img-brightness, 1); }
+
+
+/* --- Logo Styles for Theme --- */
+.logo-img {
+    transition: all 0.3s ease;
+}
+
+[data-theme='dark'] .logo-img {
+    filter: invert(1) hue-rotate(180deg) brightness(1.5) contrast(1.2);
+    mix-blend-mode: screen !important;
 }

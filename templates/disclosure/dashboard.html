@@ -8,6 +8,7 @@
     <a href="{{ url_for('company.index') }}">
         <img src="{{ url_for('static', filename='images/logos/logo.png') }}"
              alt="정보보호공시 시스템 로고"
+             class="logo-img"
              style="max-width: 480px; width: 100%; height: auto; mix-blend-mode: multiply;">
     </a>
 </div>
@@ -16,17 +17,17 @@
 <div id="dashboard-section" class="animate-fade-in">
     <!-- Overall Progress (Top Stats) -->
     <div
-        style="background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 40px; margin-bottom: 30px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+        style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 16px; padding: 40px; margin-bottom: 30px; box-shadow: var(--shadow-main); transition: all 0.3s ease;">
         <div style="display: flex; justify-content: space-between; margin-bottom: 20px; align-items: center;">
-            <span style="font-weight: 800; color: #1e293b; font-size: 1.15rem;">전체 진행률</span>
+            <span style="font-weight: 800; color: var(--text-main); font-size: 1.15rem;">전체 진행률</span>
             <span style="font-weight: 800; color: #3b82f6; font-size: 1.5rem;">{{ overall }}%</span>
         </div>
-        <div style="height: 16px; background: #e2e8f0; border-radius: 20px; overflow: hidden; margin-bottom: 15px;">
+        <div style="height: 16px; background: var(--bg-main); border-radius: 20px; overflow: hidden; margin-bottom: 15px;">
             <div
                 style="height: 100%; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); width: {{ overall }}%; border-radius: 20px; transition: width 0.5s ease;">
             </div>
         </div>
-        <div style="text-align: center; color: #64748b; font-size: 0.95rem; font-weight: 600;">
+        <div style="text-align: center; color: var(--text-muted); font-size: 0.95rem; font-weight: 600;">
             응답 완료: {{ categories|sum(attribute='completed') }} / {{ categories|sum(attribute='total') }} 질문
         </div>
     </div>
