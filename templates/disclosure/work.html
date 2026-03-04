@@ -52,6 +52,9 @@
     .inv-grid-outer {
         max-width: 1100px;
         margin: 0 auto 20px auto;
+        margin-left: 56px;
+        border-left: 3px solid #a78bfa;
+        border-radius: 0 20px 20px 0;
     }
 
     .q-card {
@@ -249,7 +252,7 @@
     .inv-grid-section {
         background: var(--bg-surface);
         border: 1px solid var(--border-color);
-        border-radius: 16px;
+        border-radius: 0 16px 16px 0;
         padding: 28px;
         margin-bottom: 20px;
     }
@@ -347,12 +350,12 @@
         gap: 8px;
         align-items: center;
     }
-    .footer-btn-back { padding: 10px 14px; border-radius: 18px; background: var(--bg-main); color: var(--text-muted); font-weight: 800; font-size: 0.82rem; text-decoration: none; transition: all 0.2s; }
+    .footer-btn-back { height: 40px; padding: 0 14px; border-radius: 18px; background: var(--bg-main); color: var(--text-muted); font-weight: 800; font-size: 0.82rem; text-decoration: none; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
     .footer-btn-back:hover { background: var(--bg-surface); color: var(--text-main); }
 
     .footer-btn-cat {
         display: flex; flex-direction: row; align-items: center; gap: 6px;
-        padding: 8px 14px; border-radius: 18px;
+        height: 40px; padding: 0 14px; border-radius: 18px;
         background: var(--bg-main); color: var(--text-muted);
         font-size: 0.75rem; font-weight: 700; text-decoration: none;
         transition: all 0.2s; white-space: nowrap;
@@ -373,7 +376,7 @@
     .footer-btn-cat.active .footer-cat-rate { background: rgba(255,255,255,0.25); }
 
     .footer-btn-review {
-        padding: 10px 18px; border-radius: 18px;
+        height: 40px; padding: 0 18px; border-radius: 18px; display: flex; align-items: center; justify-content: center;
         background: linear-gradient(135deg, #8b5cf6, #7c3aed);
         color: #fff; font-weight: 800; font-size: 0.78rem;
         text-decoration: none; white-space: nowrap;
@@ -693,7 +696,7 @@
 
 <!-- ── Footer Category Nav ── -->
 <div class="footer-bar" style="gap: 6px; padding: 10px 14px;">
-    <a href="/disclosure/" class="footer-btn-back" style="padding: 10px 16px; font-size: 0.78rem;">
+    <a href="/disclosure/" class="footer-btn-back" style="font-size: 0.78rem;">
         <i class="fas fa-th-large"></i>
     </a>
     {% for cat in sidebar_categories %}
