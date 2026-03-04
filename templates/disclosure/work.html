@@ -23,9 +23,9 @@
         gap: 6px;
         padding: 10px 20px;
         border-radius: 50px;
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
-        color: #64748b;
+        background: var(--bg-surface);
+        border: 1px solid var(--border-color);
+        color: var(--text-muted);
         font-weight: 700;
         font-size: 0.9rem;
         text-decoration: none;
@@ -55,8 +55,8 @@
     }
 
     .q-card {
-        background: #ffffff;
-        border: 1px solid #e8edf3;
+        background: var(--bg-surface);
+        border: 1px solid var(--border-color);
         border-radius: 20px;
         padding: 32px 36px;
         margin-bottom: 20px;
@@ -67,17 +67,28 @@
         box-shadow: 0 8px 30px -8px rgba(0,0,0,0.1);
     }
     .q-card.inactive {
-        opacity: 0.4;
-        pointer-events: none;
-        background: #f8fafc;
+        display: none !important;
+    }
+    /* ── Sub-question Indentation ── */
+    .q-card.level-2 {
+        margin-left: 28px;
+        border-left: 3px solid var(--primary-color);
+        border-radius: 0 20px 20px 0;
+        background: var(--bg-main);
+    }
+    .q-card.level-3 {
+        margin-left: 56px;
+        border-left: 3px solid #a78bfa;
+        border-radius: 0 20px 20px 0;
+        background: var(--bg-main);
     }
     .q-number-badge {
         min-width: 36px;
         min-height: 36px;
         padding: 4px 8px;
         border-radius: 10px;
-        background: #f1f5f9;
-        color: #64748b;
+        background: var(--bg-main);
+        color: var(--text-muted);
         font-size: 0.78rem;
         font-weight: 900;
         display: flex;
@@ -90,26 +101,62 @@
     }
     .q-header {
         display: flex;
-        align-items: flex-start;
+        align-items: center;
         gap: 14px;
         margin-bottom: 20px;
     }
     .q-title-area h4 {
         font-size: 1.05rem;
         font-weight: 700;
-        color: #1e293b;
+        color: var(--text-main);
         margin: 0 0 6px 0;
         line-height: 1.5;
     }
-    .q-help {
-        background: #f8fafc;
-        border-left: 3px solid #cbd5e1;
-        border-radius: 0 8px 8px 0;
-        padding: 10px 16px;
-        font-size: 0.88rem;
-        color: #64748b;
-        line-height: 1.6;
+    .q-help-wrapper {
+        position: relative;
+        display: inline-block;
+        cursor: help;
     }
+    .q-help {
+        position: absolute;
+        bottom: 150%;
+        left: 50%;
+        transform: translate(-50%, -10px);
+        z-index: 1000;
+        background: var(--bg-surface);
+        border: 1px solid var(--border-color);
+        border-top: 3px solid var(--primary-color);
+        border-radius: 12px;
+        padding: 14px 18px;
+        font-size: 0.85rem;
+        color: var(--text-main);
+        line-height: 1.6;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.25s cubic-bezier(0.165, 0.84, 0.44, 1);
+        width: 320px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        pointer-events: none; /* 클릭 방해 방지 */
+    }
+    /* Tooltip Arrow (Bottom) */
+    .q-help::after {
+        content: '';
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        border-width: 8px;
+        border-style: solid;
+        border-color: var(--border-color) transparent transparent transparent;
+    }
+    .q-help-wrapper:hover .q-help {
+        opacity: 1;
+        visibility: visible;
+        transform: translate(-50%, 0);
+    }
+    .q-help-icon { color: var(--text-muted); font-size: 0.95rem; margin-left: 6px; transition: color 0.2s; }
+    .q-help-wrapper:hover .q-help-icon { color: var(--primary-color); }
+    .q-help-wrapper:hover h4 { color: var(--primary-color); transition: color 0.2s; }
 
     /* ── Yes/No Buttons ── */
     .yes-no-wrap {
@@ -123,9 +170,9 @@
         font-size: 1rem;
         font-weight: 800;
         border-radius: 10px;
-        border: 1.5px solid #e2e8f0;
-        background: #ffffff;
-        color: #475569;
+        border: 1.5px solid var(--border-color);
+        background: var(--bg-surface);
+        color: var(--text-muted);
         cursor: pointer;
         transition: all 0.2s ease;
     }
@@ -142,12 +189,22 @@
         color: #991b1b !important;
         box-shadow: 0 4px 12px rgba(239,68,68,0.2);
     }
+    [data-theme='dark'] .yn-btn.yes.selected {
+        background: #064e3b !important;
+        border-color: #10b981 !important;
+        color: #ecfdf5 !important;
+    }
+    [data-theme='dark'] .yn-btn.no.selected {
+        background: #7f1d1d !important;
+        border-color: #ef4444 !important;
+        color: #fef2f2 !important;
+    }
 
     /* ── Number / Text Inputs ── */
     .num-input-wrap {
         display: flex;
         align-items: center;
-        border: 1.5px solid #e2e8f0;
+        border: 1.5px solid var(--border-color);
         border-radius: 10px;
         overflow: hidden;
         margin-top: 16px;
@@ -156,29 +213,31 @@
     .num-input-wrap:focus-within { border-color: #3b82f6; }
     .num-input {
         flex: 1;
+        min-width: 0;
         border: none !important;
         outline: none;
         text-align: right;
         font-size: 1.4rem;
         font-weight: 800;
-        color: #1e293b;
-        padding: 14px 16px;
+        color: var(--text-main);
+        padding: 14px 12px;
         background: transparent;
     }
     .num-unit {
         padding: 0 18px;
         font-weight: 800;
-        color: #64748b;
+        color: var(--text-muted);
         font-size: 1rem;
         white-space: nowrap;
     }
     .text-area-input {
         width: 100%;
-        border: 1.5px solid #e2e8f0;
+        border: 1.5px solid var(--border-color);
+        background: var(--bg-surface);
+        color: var(--text-main);
         border-radius: 10px;
         padding: 14px 18px;
         font-size: 0.98rem;
-        color: #1e293b;
         resize: vertical;
         margin-top: 16px;
         font-family: 'Pretendard', sans-serif;
@@ -188,8 +247,8 @@
 
     /* ── Investment Grid ── */
     .inv-grid-section {
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
+        background: var(--bg-surface);
+        border: 1px solid var(--border-color);
         border-radius: 16px;
         padding: 28px;
         margin-bottom: 20px;
@@ -197,22 +256,22 @@
     .inv-grid-title {
         font-size: 0.95rem;
         font-weight: 700;
-        color: #475569;
+        color: var(--text-main);
         margin-bottom: 18px;
         display: flex;
         align-items: center;
         gap: 8px;
     }
     .inv-card {
-        background: #ffffff;
-        border: 1.5px dashed #cbd5e1;
+        background: var(--bg-main);
+        border: 1.5px dashed var(--border-color);
         border-radius: 12px;
         padding: 20px;
         transition: all 0.2s;
     }
-    .inv-card:hover { border-color: #3b82f6; }
-    .inv-card-label { font-size: 0.82rem; font-weight: 700; color: #94a3b8; margin-bottom: 8px; }
-    .inv-card-name { font-size: 0.9rem; font-weight: 700; color: #334155; margin-bottom: 14px; line-height: 1.4; min-height: 36px; }
+    .inv-card:hover { border-color: var(--primary-color); }
+    .inv-card-label { font-size: 0.82rem; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; }
+    .inv-card-name { font-size: 0.9rem; font-weight: 700; color: var(--text-main); margin-bottom: 14px; line-height: 1.4; min-height: 36px; }
     .inv-sum-bar {
         background: #0f172a;
         border-radius: 12px;
@@ -223,24 +282,37 @@
         margin-top: 16px;
     }
     .inv-sum-label { color: #94a3b8; font-size: 0.85rem; font-weight: 700; }
-    .inv-sum-value { color: #ffffff; font-size: 1.4rem; font-weight: 900; font-family: monospace; }
+    .inv-sum-value { color: #ffffff; font-size: 1.3rem; font-weight: 900; font-family: 'Pretendard', sans-serif; }
+
+    /* Grid specific adjustment */
+    .inv-card .num-input {
+        font-size: 1.15rem;
+        padding: 10px 8px;
+    }
+    .inv-card .num-input-wrap {
+        margin-top: 10px;
+    }
+    .inv-card .num-unit {
+        padding: 0 12px;
+        font-size: 0.85rem;
+    }
 
     /* ── Evidence Section ── */
     .evidence-section {
-        background: #fffbeb;
-        border: 1px dashed #fcd34d;
+        background: var(--bg-main);
+        border: 1px dashed var(--border-color);
         border-radius: 10px;
         padding: 18px 20px;
         margin-top: 20px;
     }
-    .evidence-label { font-size: 0.85rem; font-weight: 700; color: #92400e; margin-bottom: 10px; }
+    .evidence-label { font-size: 0.85rem; font-weight: 700; color: var(--text-muted); margin-bottom: 10px; }
     .evidence-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
-    .evidence-tag { background: #fef3c7; border: 1px solid #fde68a; border-radius: 20px; padding: 3px 12px; font-size: 0.82rem; font-weight: 600; color: #92400e; }
-    .upload-btn { background: #92400e; color: #ffffff; border: none; border-radius: 8px; padding: 8px 16px; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all 0.2s; }
-    .upload-btn:hover { background: #78350f; }
-    .ev-file-item { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 14px; display: flex; align-items: center; justify-content: space-between; margin-top: 6px; font-size: 0.85rem; }
-    .ev-file-name { color: #334155; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 240px; }
-    .ev-del-btn { color: #94a3b8; background: none; border: none; cursor: pointer; font-size: 0.95rem; transition: color 0.15s; }
+    .evidence-tag { background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 20px; padding: 3px 12px; font-size: 0.82rem; font-weight: 600; color: var(--text-main); }
+    .upload-btn { background: var(--primary-color); color: #ffffff; border: none; border-radius: 8px; padding: 8px 16px; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+    .upload-btn:hover { background: var(--primary-dark); }
+    .ev-file-item { background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px 14px; display: flex; align-items: center; justify-content: space-between; margin-top: 6px; font-size: 0.85rem; }
+    .ev-file-name { color: var(--text-main); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 240px; }
+    .ev-del-btn { color: var(--text-muted); background: none; border: none; cursor: pointer; font-size: 0.95rem; transition: color 0.15s; }
     .ev-del-btn:hover { color: #ef4444; }
 
     /* ── Reset Button ── */
@@ -265,9 +337,9 @@
         left: 50%;
         transform: translateX(-50%);
         z-index: 100;
-        background: rgba(255,255,255,0.9);
+        background: var(--header-bg);
         backdrop-filter: blur(12px);
-        border: 1px solid rgba(255,255,255,0.6);
+        border: 1px solid var(--border-color);
         border-radius: 28px;
         padding: 8px;
         box-shadow: 0 20px 50px -12px rgba(0,0,0,0.18);
@@ -275,10 +347,40 @@
         gap: 8px;
         align-items: center;
     }
-    .footer-btn-back { padding: 14px 24px; border-radius: 22px; background: #f1f5f9; color: #475569; font-weight: 800; font-size: 0.82rem; letter-spacing: .08em; text-transform: uppercase; text-decoration: none; transition: background 0.2s; }
-    .footer-btn-back:hover { background: #e2e8f0; color: #334155; }
-    .footer-btn-save { padding: 14px 32px; border-radius: 22px; background: linear-gradient(135deg, #3b82f6, #2563eb); color: #ffffff; font-weight: 900; font-size: 0.82rem; letter-spacing: .08em; text-transform: uppercase; border: none; cursor: pointer; box-shadow: 0 8px 20px rgba(37,99,235,0.35); transition: all 0.2s; }
-    .footer-btn-save:hover { transform: scale(1.03); box-shadow: 0 12px 28px rgba(37,99,235,0.45); }
+    .footer-btn-back { padding: 10px 14px; border-radius: 18px; background: var(--bg-main); color: var(--text-muted); font-weight: 800; font-size: 0.82rem; text-decoration: none; transition: all 0.2s; }
+    .footer-btn-back:hover { background: var(--bg-surface); color: var(--text-main); }
+
+    .footer-btn-cat {
+        display: flex; flex-direction: row; align-items: center; gap: 6px;
+        padding: 8px 14px; border-radius: 18px;
+        background: var(--bg-main); color: var(--text-muted);
+        font-size: 0.75rem; font-weight: 700; text-decoration: none;
+        transition: all 0.2s; white-space: nowrap;
+    }
+    .footer-btn-cat i { font-size: 0.85rem; }
+    .footer-btn-cat:hover { background: var(--bg-surface); color: var(--primary-color); }
+    .footer-btn-cat.active {
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        color: #fff;
+        box-shadow: 0 4px 14px rgba(37,99,235,0.35);
+    }
+    .footer-cat-label { font-size: 0.72rem; font-weight: 700; }
+    .footer-cat-rate {
+        font-size: 0.62rem; font-weight: 800;
+        background: rgba(0,0,0,0.12); border-radius: 8px; padding: 1px 5px;
+    }
+    .footer-cat-rate.done { background: #22c55e; color: #fff; }
+    .footer-btn-cat.active .footer-cat-rate { background: rgba(255,255,255,0.25); }
+
+    .footer-btn-review {
+        padding: 10px 18px; border-radius: 18px;
+        background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+        color: #fff; font-weight: 800; font-size: 0.78rem;
+        text-decoration: none; white-space: nowrap;
+        box-shadow: 0 4px 14px rgba(124,58,237,0.35);
+        transition: all 0.2s;
+    }
+    .footer-btn-review:hover { transform: scale(1.04); box-shadow: 0 6px 18px rgba(124,58,237,0.45); color: #fff; }
 
     .progress-info { font-size: 0.8rem; color: #94a3b8; font-weight: 600; margin-bottom: 28px; text-align: right; }
 
@@ -289,14 +391,14 @@
         right: -450px;
         width: 450px;
         height: 100vh;
-        background: rgba(255, 255, 255, 0.98);
+        background: var(--bg-surface);
         backdrop-filter: blur(20px);
         box-shadow: -10px 0 30px rgba(0, 0, 0, 0.1);
         z-index: 2000;
         transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
         display: flex;
         flex-direction: column;
-        border-left: 1px solid #e2e8f0;
+        border-left: 1px solid var(--border-color);
     }
     .reference-panel.open { right: 0; }
     .reference-header { padding: 25px; background: var(--accent-gradient); color: white; display: flex; justify-content: space-between; align-items: center; }
@@ -348,6 +450,37 @@
         right: 450px; /* 패널 열릴 때 패널 따라 이동 */
         border-radius: 15px 0 0 15px;
     }
+
+    /* Reference Status Badge & Warning */
+    .status-badge {
+        font-size: 0.7rem;
+        padding: 2px 6px;
+        border-radius: 4px;
+        margin-left: 5px;
+        font-weight: bold;
+    }
+    .status-submitted { background: #dcfce7; color: #166534; }
+    .status-in_progress { background: #dbeafe; color: #1e40af; }
+    .status-draft { background: #f1f5f9; color: #475569; }
+
+    .ref-warning-box {
+        background: #fffbeb;
+        border: 1px solid #fdf4ff;
+        border-left: 4px solid #f59e0b;
+        padding: 10px 14px;
+        margin-bottom: 15px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        color: #92400e;
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    [data-theme='dark'] .ref-warning-box {
+        background: #451a03;
+        border-color: #78350f;
+        color: #fca5a5;
+    }
 </style>
 {% endblock %}
 
@@ -362,33 +495,6 @@
     </a>
 </div>
 
-<!-- ── Navigation Bar ── -->
-<div class="work-nav-bar animate-fade-in">
-    <a href="/disclosure/{{ company.id }}/{{ year }}"
-       class="btn btn-white shadow-sm rounded-pill px-4 py-2 fw-bold border d-flex align-items-center gap-2">
-        <i class="fas fa-arrow-left text-primary"></i> 공시 현황으로
-    </a>
-
-    </a>
-
-    <div class="category-pills">
-        {% for cat in sidebar_categories %}
-        <a href="/disclosure/{{ company.id }}/{{ year }}/work?category={{ cat.id }}"
-           class="category-pill {% if current_category_id == cat.id %}active{% endif %}">
-            <i class="fas
-                {% if cat.id == 1 %}fa-piggy-bank
-                {% elif cat.id == 2 %}fa-users
-                {% elif cat.id == 3 %}fa-certificate
-                {% else %}fa-shield-alt{% endif %}"></i>
-            {{ cat.name }}
-        </a>
-        {% endfor %}
-    </div>
-
-    <a href="/disclosure/{{ company.id }}/{{ year }}/review" class="btn-premium-action px-5">
-        <i class="fas fa-search me-2"></i>최종 리뷰
-    </a>
-</div>
 
 <!-- ── Section Header ── -->
 <div class="q-section animate-fade-in">
@@ -405,92 +511,207 @@
 
 <!-- ── Question Loop ── -->
 {% for q in questions %}
-    {% if q.id == 'Q3' and q.is_active %}
-    <div class="inv-grid-outer animate-fade-in">
-        <div class="inv-grid-section">
-            <div class="inv-grid-title"><i class="fas fa-calculator text-primary"></i> 정보보호부문 투자액 (B) — 세부 항목</div>
-            <div class="row g-3">
-                {% for sub_q in questions if sub_q.id in ['Q4', 'Q5', 'Q6'] %}
-                <div class="col-12 col-md-4">
-                    <div class="inv-card h-100">
-                        <div class="inv-card-label">항목 {{ loop.index }}</div>
-                        <div class="inv-card-name">{{ sub_q.text }}</div>
-                        <div class="num-input-wrap">
-                            <input type="text" id="input-{{ sub_q.id }}"
-                                   value="{{ answers.get(sub_q.id, '') | comma }}"
-                                   class="num-input" placeholder="0" oninput="formatNumber(this)"
-                                   onchange="saveAnswer('{{ sub_q.id }}', this.value)">
-                            <span class="num-unit">원</span>
+    {% if q.is_active %}
+        {% if q.id == 'Q3' %}
+        <div class="inv-grid-outer animate-fade-in">
+            <div class="inv-grid-section">
+                <div class="inv-grid-title"><i class="fas fa-calculator text-primary"></i> 정보보호부문 투자액 (B) — 세부 항목</div>
+                <div class="row g-3">
+                    {% for sub_q in questions if sub_q.id in ['Q4', 'Q5', 'Q6'] %}
+                    <div class="col-12 col-md-4">
+                        <div class="inv-card h-100">
+                            <div class="inv-card-label">항목 {{ loop.index }}</div>
+                            <div class="inv-card-name">{{ sub_q.text }}</div>
+                            <div class="num-input-wrap">
+                                <input type="text" id="input-{{ sub_q.id }}"
+                                       value="{{ answers.get(sub_q.id, '') | comma }}"
+                                       class="num-input" placeholder="0" oninput="formatNumber(this)"
+                                       onchange="saveAnswer('{{ sub_q.id }}', this.value)">
+                                <span class="num-unit">원</span>
+                            </div>
                         </div>
                     </div>
-                </div>
-                {% endfor %}
-            </div>
-            <div class="inv-sum-bar">
-                <div><div class="inv-sum-label">TOTAL AMOUNT</div><div style="color:#94a3b8; font-size:0.8rem; font-weight:600;">정보보호 투자액 합계 (B)</div></div>
-                <div><span id="investment-sum-b" class="inv-sum-value">0</span><span style="color:#64748b; font-size:0.8rem; font-weight:700; margin-left:4px;">KRW</span></div>
-            </div>
-        </div>
-    </div>
-    {% elif q.id not in ['Q4', 'Q5', 'Q6'] %}
-    <div class="q-card {% if not q.is_active %}inactive{% endif %} animate-fade-in" id="card-{{ q.id }}">
-        {% if q.is_active %}
-        <button type="button" class="reset-btn" onclick="resetAnswer('{{ q.id }}')" title="답변 초기화"><i class="fas fa-undo-alt"></i></button>
-        {% endif %}
-        <div class="q-header">
-            <div class="q-number-badge">{{ q.display_number or q.id }}</div>
-            <div class="q-title-area">
-                <h4>{{ q.text }}</h4>
-                {% if q.help_text %}<div class="q-help"><i class="fas fa-info-circle me-1"></i>{{ q.help_text | safe }}</div>{% endif %}
-            </div>
-        </div>
-        <div>
-            {% if q.type == 'yes_no' %}
-            <div class="yes-no-wrap">
-                <button type="button" id="btn-{{ q.id }}-YES" class="yn-btn yes {% if answers.get(q.id) == 'YES' %}selected{% endif %}" onclick="selectYesNo('{{ q.id }}', 'YES')">YES</button>
-                <button type="button" id="btn-{{ q.id }}-NO" class="yn-btn no {% if answers.get(q.id) == 'NO' %}selected{% endif %}" onclick="selectYesNo('{{ q.id }}', 'NO')">NO</button>
-            </div>
-            {% elif q.type == 'number' %}
-            <div class="num-input-wrap">
-                <input type="text" id="input-{{ q.id }}" value="{{ answers.get(q.id, '') | comma }}" class="num-input" placeholder="0" oninput="formatNumber(this)" onchange="saveAnswer('{{ q.id }}', this.value)">
-                <span class="num-unit">원</span>
-            </div>
-            {% elif q.type in ['text', 'textarea', 'long_text'] %}
-            <textarea id="input-{{ q.id }}" class="text-area-input" rows="4" placeholder="내용을 상세히 기재해 주세요." onchange="saveAnswer('{{ q.id }}', this.value)">{{ answers.get(q.id, '') }}</textarea>
-            {% elif q.type == 'select' and q.options_list %}
-            <div class="mt-3 d-flex flex-column gap-2">
-                {% for opt in q.options_list %}
-                <label class="d-flex align-items-center gap-3 p-3 rounded-3 border" style="cursor:pointer;"><input type="radio" name="q-{{ q.id }}" value="{{ opt }}" {% if answers.get(q.id) == opt %}checked{% endif %} onchange="saveAnswer('{{ q.id }}', this.value)">{{ opt }}</label>
-                {% endfor %}
-            </div>
-            {% endif %}
-
-            {% if q.evidence_list and q.is_active %}
-            <div class="evidence-section">
-                <div class="evidence-label">필수 증빙 자료</div>
-                <div class="evidence-tags">
-                    {% set ev_list = q.evidence_list | from_json_or_default([]) %}
-                    {% for ev_item in (ev_list if ev_list is iterable else [q.evidence_list]) %}<span class="evidence-tag">{{ ev_item }}</span>{% endfor %}
-                </div>
-                <label class="upload-btn"><i class="fas fa-upload me-1"></i>파일 선택<input type="file" style="display:none;" onchange="uploadEvidence('{{ q.id }}', this.files[0])"></label>
-                <div id="evidence-list-{{ q.id }}" style="margin-top:10px;">
-                    {% for ev in evidence.get(q.id, []) %}
-                    <div class="ev-file-item"><span>{{ ev.file_name }}</span><button type="button" class="ev-del-btn" onclick="deleteEvidence('{{ q.id }}', '{{ ev.id }}')"><i class="fas fa-times"></i></button></div>
                     {% endfor %}
                 </div>
+                <div class="inv-sum-bar">
+                    <div><div class="inv-sum-label">TOTAL AMOUNT</div><div style="color:#94a3b8; font-size:0.8rem; font-weight:600;">정보보호 투자액 합계 (B)</div></div>
+                    <div><span id="investment-sum-b" class="inv-sum-value">0</span><span style="color:#64748b; font-size:0.8rem; font-weight:700; margin-left:4px;">원</span></div>
+                </div>
             </div>
-            {% endif %}
         </div>
-    </div>
+        {% elif q.id not in ['Q4', 'Q5', 'Q6'] %}
+        <div class="q-card animate-fade-in level-{{ q.level }}" id="card-{{ q.id }}">
+            <button type="button" class="reset-btn" onclick="resetAnswer('{{ q.id }}')" title="답변 초기화"><i class="fas fa-undo-alt"></i></button>
+            <div class="q-header">
+                <div class="q-number-badge">{{ q.display_number or q.id }}</div>
+                <div class="q-title-area">
+                    <div class="q-help-wrapper">
+                        <h4 class="d-flex align-items-center mb-0">
+                            {{ q.text }}
+                            {% if q.help_text %}<i class="fas fa-info-circle q-help-icon"></i>{% endif %}
+                        </h4>
+                        {% if q.help_text %}<div class="q-help">{{ q.help_text | safe }}</div>{% endif %}
+                    </div>
+                </div>
+            </div>
+            <div>
+                {% if q.type == 'yes_no' %}
+                <div class="yes-no-wrap">
+                    <button type="button" id="btn-{{ q.id }}-YES" class="yn-btn yes {% if answers.get(q.id) == 'YES' %}selected{% endif %}" onclick="selectYesNo('{{ q.id }}', 'YES')">YES</button>
+                    <button type="button" id="btn-{{ q.id }}-NO" class="yn-btn no {% if answers.get(q.id) == 'NO' %}selected{% endif %}" onclick="selectYesNo('{{ q.id }}', 'NO')">NO</button>
+                </div>
+                {% elif q.type == 'number' %}
+                <div class="num-input-wrap">
+                    <input type="text" id="input-{{ q.id }}" value="{{ answers.get(q.id, '') | comma }}" class="num-input" placeholder="0" oninput="formatNumber(this)" onchange="saveAnswer('{{ q.id }}', this.value)">
+                    <span class="num-unit">{{ q.unit }}</span>
+                </div>
+                {% elif q.type in ['text', 'textarea', 'long_text'] %}
+                <textarea id="input-{{ q.id }}" class="text-area-input" rows="4" placeholder="내용을 상세히 기재해 주세요." onchange="saveAnswer('{{ q.id }}', this.value)">{{ answers.get(q.id, '') }}</textarea>
+                {% elif q.type == 'select' and q.options_list %}
+                <div class="mt-3 d-flex flex-column gap-2">
+                    {% for opt in q.options_list %}
+                    <label class="d-flex align-items-center gap-3 p-3 rounded-3 border" style="cursor:pointer;"><input type="radio" name="q-{{ q.id }}" value="{{ opt }}" {% if answers.get(q.id) == opt %}checked{% endif %} onchange="saveAnswer('{{ q.id }}', this.value)">{{ opt }}</label>
+                    {% endfor %}
+                </div>
+                {% elif q.type == 'checkbox' and q.options_list %}
+                {% set checked_list = answers.get(q.id) | from_json_or_default([]) %}
+                <div class="mt-3 d-flex flex-column gap-2">
+                    {% for opt in q.options_list %}
+                    <label class="d-flex align-items-center gap-3 p-3 rounded-3 border" style="cursor:pointer;">
+                        <input type="checkbox" name="q-{{ q.id }}" value="{{ opt }}"
+                            {% if opt in checked_list %}checked{% endif %}
+                            onchange="saveCheckbox('{{ q.id }}')">
+                        {{ opt }}
+                    </label>
+                    {% endfor %}
+                </div>
+                {% elif q.type == 'table' and q.options_list %}
+                {% set tbl_cols = q.options_list.columns %}
+                {% set tbl_rows = answers.get(q.id) | from_json_or_default([]) %}
+                {% set tbl_style = 'width:100%; background:#0f1923; color:#c8d8e8; border:1px solid #2a3a50; border-radius:4px; padding:4px 6px;' %}
+                <div class="table-input-wrap" style="overflow-x:auto; margin-top:8px;">
+                <table class="ciso-table" id="tbl-{{ q.id }}" style="width:100%; border-collapse:collapse; font-size:0.85rem;">
+                    <thead><tr>
+                    {% for col in tbl_cols %}
+                    <th style="background:#1a2535; color:#8fa3bf; padding:8px 10px; border:1px solid #2a3a50; text-align:center; white-space:nowrap;">{{ col.label }}</th>
+                    {% endfor %}
+                    {% if q.options_list.dynamic_rows %}<th style="background:#1a2535; border:1px solid #2a3a50; width:36px;"></th>{% endif %}
+                    </tr></thead>
+                    <tbody>
+                    {% if q.options_list.dynamic_rows %}
+                        {# ── 동적 행: 저장된 rows 렌더링, 없으면 빈 1행 ── #}
+                        {% set render_rows = tbl_rows if tbl_rows else [{}] %}
+                        {% for row_data in render_rows %}
+                        <tr>
+                        {% for col in tbl_cols %}
+                        <td style="padding:5px 7px; border:1px solid #2a3a50;">
+                        {% if col.type == 'select' %}
+                            <select class="tbl-input" data-qid="{{ q.id }}" data-colkey="{{ col.key }}" onchange="saveTableAnswer('{{ q.id }}')" style="{{ tbl_style }}">
+                                <option value="">-</option>
+                                {% for ch in col.choices %}
+                                <option value="{{ ch }}" {% if row_data.get(col.key) == ch %}selected{% endif %}>{{ ch }}</option>
+                                {% endfor %}
+                            </select>
+                        {% elif col.type == 'date' %}
+                            <input type="date" class="tbl-input" data-qid="{{ q.id }}" data-colkey="{{ col.key }}"
+                                value="{{ row_data.get(col.key, '') }}" onchange="saveTableAnswer('{{ q.id }}')" style="{{ tbl_style }}">
+                        {% else %}
+                            <input type="text" class="tbl-input" data-qid="{{ q.id }}" data-colkey="{{ col.key }}"
+                                value="{{ row_data.get(col.key, '') }}" placeholder="{{ col.label }}"
+                                onblur="saveTableAnswer('{{ q.id }}')" style="{{ tbl_style }}">
+                        {% endif %}
+                        </td>
+                        {% endfor %}
+                        <td style="padding:4px; border:1px solid #2a3a50; text-align:center;">
+                            <button type="button" onclick="removeTableRow(this, '{{ q.id }}')"
+                                style="background:none; border:none; color:#e05050; cursor:pointer; font-size:1rem; line-height:1;">×</button>
+                        </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        {# ── 고정 행: fixed_rows 기준 렌더링 ── #}
+                        {% for row_type in q.options_list.fixed_rows %}
+                        {% set ns = namespace(row_data={}) %}
+                        {% for saved_row in tbl_rows %}
+                        {% if saved_row.get('type') == row_type %}{% set ns.row_data = saved_row %}{% endif %}
+                        {% endfor %}
+                        <tr data-rowtype="{{ row_type }}">
+                        {% for col in tbl_cols %}
+                        <td style="padding:5px 7px; border:1px solid #2a3a50;">
+                        {% if col.key == 'type' %}
+                            <span style="color:#8fa3bf; font-weight:600; padding:4px 8px; display:block; text-align:center;">{{ row_type }}</span>
+                        {% elif col.type == 'select' %}
+                            <select class="tbl-input" data-qid="{{ q.id }}" data-colkey="{{ col.key }}" onchange="saveTableAnswer('{{ q.id }}')" style="{{ tbl_style }}">
+                                <option value="">-</option>
+                                {% for ch in col.choices %}
+                                <option value="{{ ch }}" {% if ns.row_data.get(col.key) == ch %}selected{% endif %}>{{ ch }}</option>
+                                {% endfor %}
+                            </select>
+                        {% else %}
+                            <input type="text" class="tbl-input" data-qid="{{ q.id }}" data-colkey="{{ col.key }}"
+                                value="{{ ns.row_data.get(col.key, '') }}" placeholder="{{ col.label }}"
+                                onblur="saveTableAnswer('{{ q.id }}')" style="{{ tbl_style }}">
+                        {% endif %}
+                        </td>
+                        {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    {% endif %}
+                    </tbody>
+                </table>
+                {% if q.options_list.dynamic_rows %}
+                <button type="button" onclick="addTableRow('{{ q.id }}', {{ q.options_list.columns | tojson }})"
+                    style="margin-top:8px; background:#1a2535; color:#5b9bd5; border:1px dashed #2a3a50; border-radius:4px; padding:5px 14px; font-size:0.82rem; cursor:pointer;">
+                    + 행 추가
+                </button>
+                {% endif %}
+                </div>
+                {% endif %}
+
+                {% if q.evidence_list %}
+                <div class="evidence-section">
+                    <div class="evidence-label">필수 증빙 자료</div>
+                    <div class="evidence-tags">
+                        {% set ev_list = q.evidence_list | from_json_or_default([]) %}
+                        {% for ev_item in (ev_list if ev_list is iterable else [q.evidence_list]) %}<span class="evidence-tag">{{ ev_item }}</span>{% endfor %}
+                    </div>
+                    <label class="upload-btn"><i class="fas fa-upload me-1"></i>파일 선택<input type="file" style="display:none;" onchange="uploadEvidence('{{ q.id }}', this.files[0])"></label>
+                    <div id="evidence-list-{{ q.id }}" style="margin-top:10px;">
+                        {% for ev in evidence.get(q.id, []) %}
+                        <div class="ev-file-item"><span>{{ ev.file_name }}</span><button type="button" class="ev-del-btn" onclick="deleteEvidence('{{ q.id }}', '{{ ev.id }}')"><i class="fas fa-times"></i></button></div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
     {% endif %}
 {% endfor %}
 
 <div style="height: 100px;"></div>
 
-<!-- ── Footer Action Bar ── -->
-<div class="footer-bar">
-    <a href="/disclosure/{{ company.id }}/{{ year }}" class="footer-btn-back">Dashboard</a>
-    <button type="button" class="footer-btn-save" onclick="location.reload()"><i class="fas fa-save me-1"></i>Save & Finish</button>
+<!-- ── Footer Category Nav ── -->
+<div class="footer-bar" style="gap: 6px; padding: 10px 14px;">
+    <a href="/disclosure/" class="footer-btn-back" style="padding: 10px 16px; font-size: 0.78rem;">
+        <i class="fas fa-th-large"></i>
+    </a>
+    {% for cat in sidebar_categories %}
+    <a href="/disclosure/work?category={{ cat.id }}"
+       class="footer-btn-cat {% if current_category_id == cat.id %}active{% endif %}"
+       title="{{ cat.name }}">
+        <i class="fas
+            {% if cat.id == 1 %}fa-piggy-bank
+            {% elif cat.id == 2 %}fa-users
+            {% elif cat.id == 3 %}fa-certificate
+            {% else %}fa-shield-alt{% endif %}"></i>
+        <span class="footer-cat-label">{{ cat.name }}</span>
+        <span class="footer-cat-rate {% if cat.rate == 100 %}done{% endif %}">{{ cat.rate }}%</span>
+    </a>
+    {% endfor %}
+    <a href="/disclosure/review" class="footer-btn-review">
+        <i class="fas fa-search me-1"></i>최종 리뷰
+    </a>
 </div>
 {% endblock %}
 
@@ -511,6 +732,7 @@
                 <option value="">연도 선택</option>
             </select>
         </div>
+        <div id="ref-status-area" class="p-3 pb-0" style="display: none;"></div>
         <div class="reference-body" id="reference-content">
             <div class="text-center py-5 text-muted"><p>연도를 선택하면 과거 답변이 표시됩니다.</p></div>
         </div>
@@ -540,6 +762,74 @@
 
     function selectYesNo(qId, value) { saveAnswer(qId, value); }
     function resetAnswer(qId) { if (confirm('초기화하시겠습니까?')) saveAnswer(qId, ''); }
+
+    function saveCheckbox(qId) {
+        const checked = [...document.querySelectorAll(`input[name="q-${qId}"]:checked`)].map(cb => cb.value);
+        saveAnswer(qId, JSON.stringify(checked));
+    }
+
+    function saveTableAnswer(qId) {
+        const table = document.getElementById('tbl-' + qId);
+        if (!table) return;
+        const rowsData = [];
+        table.querySelectorAll('tbody tr').forEach(tr => {
+            const rowData = {};
+            if (tr.dataset.rowtype) rowData['type'] = tr.dataset.rowtype;
+            tr.querySelectorAll('.tbl-input').forEach(inp => {
+                rowData[inp.dataset.colkey] = inp.value;
+            });
+            rowsData.push(rowData);
+        });
+        saveAnswer(qId, JSON.stringify(rowsData));
+    }
+
+    function addTableRow(qId, colDefs) {
+        const tbody = document.querySelector('#tbl-' + qId + ' tbody');
+        if (!tbody) return;
+        const tr = document.createElement('tr');
+        const cellStyle = 'padding:5px 7px; border:1px solid #2a3a50;';
+        const inputStyle = 'width:100%; background:#0f1923; color:#c8d8e8; border:1px solid #2a3a50; border-radius:4px; padding:4px 6px;';
+        colDefs.forEach(col => {
+            const td = document.createElement('td');
+            td.style.cssText = cellStyle;
+            if (col.type === 'select') {
+                const sel = document.createElement('select');
+                sel.className = 'tbl-input';
+                sel.dataset.qid = qId;
+                sel.dataset.colkey = col.key;
+                sel.style.cssText = inputStyle;
+                sel.onchange = () => saveTableAnswer(qId);
+                sel.innerHTML = '<option value="">-</option>' + (col.choices || []).map(c => `<option value="${c}">${c}</option>`).join('');
+                td.appendChild(sel);
+            } else if (col.type === 'date') {
+                const inp = document.createElement('input');
+                inp.type = 'date'; inp.className = 'tbl-input';
+                inp.dataset.qid = qId; inp.dataset.colkey = col.key;
+                inp.style.cssText = inputStyle;
+                inp.onchange = () => saveTableAnswer(qId);
+                td.appendChild(inp);
+            } else {
+                const inp = document.createElement('input');
+                inp.type = 'text'; inp.className = 'tbl-input';
+                inp.dataset.qid = qId; inp.dataset.colkey = col.key;
+                inp.placeholder = col.label; inp.style.cssText = inputStyle;
+                inp.onblur = () => saveTableAnswer(qId);
+                td.appendChild(inp);
+            }
+            tr.appendChild(td);
+        });
+        const delTd = document.createElement('td');
+        delTd.style.cssText = 'padding:4px; border:1px solid #2a3a50; text-align:center;';
+        delTd.innerHTML = '<button type="button" onclick="removeTableRow(this,\'' + qId + '\')" style="background:none;border:none;color:#e05050;cursor:pointer;font-size:1rem;">×</button>';
+        tr.appendChild(delTd);
+        tbody.appendChild(tr);
+        saveTableAnswer(qId);
+    }
+
+    function removeTableRow(btn, qId) {
+        btn.closest('tr').remove();
+        saveTableAnswer(qId);
+    }
 
     function updateInvestmentSum() {
         let total = 0;
@@ -578,11 +868,17 @@
                 if (data.success) {
                     const currentVal = select.value;
                     select.innerHTML = '<option value="">연도 선택</option>';
-                    data.years.forEach(y => {
-                        if (y == '{{ year }}') return;
+                    data.years.forEach(item => {
+                        if (item.year == '{{ year }}') return;
                         const opt = document.createElement('option');
-                        opt.value = y; opt.textContent = y + '년 공시';
-                        if (y == currentVal) opt.selected = true;
+                        opt.value = item.year;
+                        
+                        let statusText = '대기';
+                        if (item.status === 'completed') statusText = '작성완료';
+                        else if (item.status === 'in_progress') statusText = '작성중';
+                        
+                        opt.textContent = `${item.year}년 [${statusText}]`;
+                        if (item.year == currentVal) opt.selected = true;
                         select.appendChild(opt);
                     });
                 }
@@ -592,7 +888,13 @@
     function loadReferenceData() {
         const year = document.getElementById('ref-year-select').value;
         const body = document.getElementById('reference-content');
-        if (!year) { body.innerHTML = '<div class="text-center py-5 text-muted">연도 선택 시 과거 답변 표출</div>'; return; }
+        const statusArea = document.getElementById('ref-status-area');
+        
+        if (!year) { 
+            body.innerHTML = '<div class="text-center py-5 text-muted">연도 선택 시 과거 답변 표출</div>'; 
+            statusArea.style.display = 'none';
+            return; 
+        }
         body.innerHTML = '<div class="text-center py-5">로딩 중...</div>';
         
         // 현재 보고 있는 카테고리 ID 추가
@@ -601,6 +903,33 @@
         fetch(`/disclosure/api/answers/{{ company.id }}/${year}?category_id=${categoryId}`)
             .then(res => res.json())
             .then(data => {
+                // 상단 경고 처리
+                if (data.success) {
+                    if (data.status === 'completed') {
+                        statusArea.innerHTML = `
+                            <div class="ref-warning-box" style="border-left-color: #10b981; background: #f0fdf4; color: #166534;">
+                                <i class="fas fa-check-circle" style="margin-top: 3px;"></i>
+                                <div>
+                                    <strong>작성 완료 데이터</strong><br>
+                                    검토가 완료된 자료입니다. 안심하고 참고하십시오.
+                                </div>
+                            </div>
+                        `;
+                        statusArea.style.display = 'block';
+                    } else {
+                        statusArea.innerHTML = `
+                            <div class="ref-warning-box">
+                                <i class="fas fa-exclamation-triangle" style="margin-top: 3px;"></i>
+                                <div>
+                                    <strong>미완료 데이터 안내</strong><br>
+                                    현재 조회 중인 자료는 아직 작성 중인 초안입니다. 작성 시 참고용으로만 활용하십시오.
+                                </div>
+                            </div>
+                        `;
+                        statusArea.style.display = 'block';
+                    }
+                }
+
                 if (data.success && data.answers.length > 0) {
                     let html = '';
                     data.answers.forEach(a => {

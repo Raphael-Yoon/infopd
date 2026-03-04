@@ -87,11 +87,12 @@ def _is_question_active(q, questions_dict, answers):
         return False
     if not _is_question_active(parent_q, questions_dict, answers):
         return False
+    # group 타입은 별도 답변이 없어도 하위 항목을 항상 활성화
+    if parent_q['type'] == 'group':
+        return True
     parent_answer = answers.get(parent_id)
     if parent_answer is None:
         return False
-    if parent_q['type'] == 'group':
-        return True
     if parent_q['type'] == 'yes_no':
         return _is_yes(parent_answer)
     return False
@@ -161,7 +162,19 @@ def _update_session_progress(conn, company_id, year):
                 answered += 1
 
         rate = round((answered / total) * 100) if total > 0 else 0
-        status = 'submitted' if rate == 100 else ('in_progress' if answered > 0 else 'draft')
+        
+        # 현재 세션의 상태 확인 (이미 확정된 경우 유지)
+        existing_status = None
+        existing_row = conn.execute(
+            'SELECT status FROM ipd_sessions WHERE company_id=? AND year=?', (company_id, year)
+        ).fetchone()
+        if existing_row:
+            existing_status = existing_row['status']
+
+        if existing_status == 'confirmed':
+            status = 'confirmed'
+        else:
+            status = 'completed' if rate == 100 else ('in_progress' if answered > 0 else 'draft')
 
         existing = conn.execute(
             'SELECT id FROM ipd_sessions WHERE company_id=? AND year=?', (company_id, year)
@@ -171,7 +184,7 @@ def _update_session_progress(conn, company_id, year):
             conn.execute('''
                 UPDATE ipd_sessions
                 SET total_questions=?, answered_questions=?, completion_rate=?,
-                    status=CASE WHEN status='submitted' THEN 'submitted' ELSE ? END,
+                    status=?,
                     updated_at=CURRENT_TIMESTAMP
                 WHERE company_id=? AND year=?
             ''', (total, answered, rate, status, company_id, year))
@@ -253,13 +266,29 @@ def _get_target_or_404(conn, company_id, year):
 
 
 # ============================================================
-# 공시 대시보드
+# 공시 대시보드 및 세션 관리
 # ============================================================
 
+@bp_disclosure.route('/select/<company_id>/<int:year>')
 @bp_disclosure.route('/<company_id>/<int:year>')
-def dashboard(company_id, year):
-    """공시 작업 대시보드 — 카테고리별 진행률"""
+def select_session(company_id, year):
+    """공시 작업 세션 설정 후 대시보드로 리다이렉트 (주소창 ID 숨김 및 하위 호환성)"""
+    session['current_company_id'] = company_id
+    session['current_year'] = year
+    return redirect(url_for('disclosure.dashboard'))
+
+
+@bp_disclosure.route('/')
+def dashboard():
+    """공시 작업 대시보드 — 카테고리별 진행률 (세션 기반)"""
+    company_id = session.get('current_company_id')
+    year = session.get('current_year')
+    
+    if not company_id or not year:
+        return redirect(url_for('company.index'))
+
     with get_db() as conn:
+        _update_session_progress(conn, company_id, year)
         company = _get_company_or_404(conn, company_id)
         _get_target_or_404(conn, company_id, year)
 
@@ -310,10 +339,15 @@ def dashboard(company_id, year):
         for qid in cat3_questions:
             if qid in answers and answers[qid] not in (None, '', 'NO', 'N/A'):
                 cert_count += 1
+        # 세션 정보 조회
+        session_info = conn.execute(
+            'SELECT * FROM ipd_sessions WHERE company_id=? AND year=?', (company_id, year)
+        ).fetchone() or {'status': 'draft'}
 
     return render_template('disclosure/dashboard.html',
                            company=dict(company), year=year,
-                           categories=cat_list, overall=overall, session=session,
+                           categories=cat_list, overall=overall,
+                           session=session_info,
                            ratios=ratios, cert_count=cert_count)
 
 
@@ -321,11 +355,17 @@ def dashboard(company_id, year):
 # 공시 작업 화면
 # ============================================================
 
-@bp_disclosure.route('/<company_id>/<int:year>/work')
-def work(company_id, year):
-    """질문-답변 입력 화면"""
+@bp_disclosure.route('/work')
+def work():
+    """질문-답변 입력 화면 (세션 기반)"""
+    company_id = session.get('current_company_id')
+    year = session.get('current_year')
+    
+    if not company_id or not year:
+        return redirect(url_for('company.index'))
     category_id = request.args.get('category', type=int, default=1)
     with get_db() as conn:
+        _update_session_progress(conn, company_id, year)
         company = _get_company_or_404(conn, company_id)
         _get_target_or_404(conn, company_id, year)
 
@@ -357,7 +397,13 @@ def work(company_id, year):
                 evidence_map[qid] = []
             evidence_map[qid].append(dict(e))
 
-        # options JSON 파싱
+        # options JSON 파싱 + 단위(unit) 주입
+        PERSON_UNIT_IDS = {
+            QID.PER_TOTAL_EMPLOYEES,  # Q10 총 임직원 수
+            QID.PER_IT_EMPLOYEES,     # Q28 정보기술부문 인력(C)
+            QID.PER_INTERNAL,         # Q11 내부 전담인력(D1)
+            QID.PER_EXTERNAL,         # Q12 외주 전담인력(D2)
+        }
         for q in questions:
             if q.get('options'):
                 try:
@@ -368,29 +414,32 @@ def work(company_id, year):
                 q['options_list'] = []
             q['is_active'] = _is_question_active(q, questions_dict, answers)
             q['is_skipped'] = _is_question_skipped(q, questions_dict, answers)
+            # number 타입 단위 설정: 인원 관련 필드는 '명', 나머지는 '원'
+            if q['type'] == 'number':
+                q['unit'] = '명' if q['id'] in PERSON_UNIT_IDS else '원'
+            else:
+                q['unit'] = ''
 
-        # 카테고리별 진행률 계산 (사이드바용)
-        # 전체 카테고리 목록과 각 카테고리의 통계 계산
-        cat_stats_rows = conn.execute('''
-            SELECT category_id, category, 
-                   COUNT(*) as total,
-                   SUM(CASE WHEN status='completed' OR status='skipped' THEN 1 ELSE 0 END) as done
-            FROM ipd_questions q
-            LEFT JOIN ipd_answers a ON q.id = a.question_id AND a.company_id = ? AND a.year = ?
-            WHERE q.type != 'group'
-            GROUP BY category_id
-            ORDER BY category_id
-        ''', (company_id, year)).fetchall()
+        # 카테고리별 진행률 계산 (사이드바용) — _is_question_active 기반으로 정확히 계산
+        cat_map = {}
+        for q in all_questions:
+            if q['type'] == 'group':
+                continue
+            cat_id = q['category_id']
+            if cat_id not in cat_map:
+                cat_map[cat_id] = {'id': cat_id, 'name': q['category'], 'total': 0, 'done': 0}
+            cat_map[cat_id]['total'] += 1
+            if _is_question_active(q, questions_dict, answers):
+                if q['id'] in answers and answers[q['id']] not in (None, ''):
+                    cat_map[cat_id]['done'] += 1
+            elif _is_question_skipped(q, questions_dict, answers):
+                cat_map[cat_id]['done'] += 1
 
         sidebar_categories = []
-        for r in cat_stats_rows:
-            sidebar_categories.append({
-                'id': r['category_id'],
-                'name': r['category'],
-                'total': r['total'],
-                'done': r['done'],
-                'rate': int((r['done'] / r['total']) * 100) if r['total'] > 0 else 0
-            })
+        for cat_id in sorted(cat_map):
+            c = cat_map[cat_id]
+            c['rate'] = int((c['done'] / c['total']) * 100) if c['total'] > 0 else 0
+            sidebar_categories.append(c)
 
         current_category_name = next((c['name'] for c in sidebar_categories if c['id'] == category_id), "Unknown")
         
@@ -435,8 +484,8 @@ def save_answer():
         data = request.get_json()
         question_id = data.get('question_id')
         value = data.get('value')
-        company_id = data.get('company_id')
-        year = data.get('year')
+        company_id = data.get('company_id') or session.get('current_company_id')
+        year = data.get('year') or session.get('current_year')
 
         if not all([question_id, company_id, year]):
             return jsonify({'success': False, 'message': '필수 파라미터 누락'}), 400
@@ -560,8 +609,8 @@ def save_answer():
 def upload_evidence():
     """증빙 자료 업로드"""
     try:
-        company_id = request.form.get('company_id')
-        year = request.form.get('year', type=int)
+        company_id = request.form.get('company_id') or session.get('current_company_id')
+        year = request.form.get('year', session.get('current_year'), type=int)
         question_id = request.form.get('question_id')
 
         if not all([company_id, year, question_id]):
@@ -650,9 +699,14 @@ def serve_evidence(company_id, year, filename):
 # 공시 자료 검토 (5단계)
 # ============================================================
 
-@bp_disclosure.route('/<company_id>/<int:year>/review')
-def review(company_id, year):
-    """공시 자료 전체 검토 화면"""
+@bp_disclosure.route('/review')
+def review():
+    """공시 자료 전체 검토 화면 (세션 기반)"""
+    company_id = session.get('current_company_id')
+    year = session.get('current_year')
+    
+    if not company_id or not year:
+        return redirect(url_for('company.index'))
     with get_db() as conn:
         company = _get_company_or_404(conn, company_id)
         _get_target_or_404(conn, company_id, year)
@@ -697,17 +751,27 @@ def review(company_id, year):
                 categories[cat_id] = {'id': cat_id, 'name': q['category'], 'questions': []}
             categories[cat_id]['questions'].append(q)
 
+        # Q3 (정보보호부문 투자액) 자동 계산 (Q4+Q5+Q6)
+        if 'Q4' in answers or 'Q5' in answers or 'Q6' in answers:
+            try:
+                b1 = float(str(answers.get('Q4', 0) or 0).replace(',', ''))
+                b2 = float(str(answers.get('Q5', 0) or 0).replace(',', ''))
+                b3 = float(str(answers.get('Q6', 0) or 0).replace(',', ''))
+                answers['Q3'] = b1 + b2 + b3
+            except ValueError:
+                pass
+
         session_row = conn.execute(
             'SELECT * FROM ipd_sessions WHERE company_id=? AND year=?', (company_id, year)
         ).fetchone()
-        session = dict(session_row) if session_row else {'completion_rate': 0, 'status': 'draft'}
+        session_info = dict(session_row) if session_row else {'completion_rate': 0, 'status': 'draft'}
 
         # 투자 비율 계산
         ratios = _calculate_ratios(conn, company_id, year, answers)
 
         # 답변이 없는 가상 세션 객체 보완
-        if not session:
-            session = {'completion_rate': 0, 'status': 'draft', 'id': None}
+        if not session_info:
+            session_info = {'completion_rate': 0, 'status': 'draft', 'id': None}
             
         # 전체 진행률 계산
         total_q = sum(1 for q in all_questions if q['type'] != 'group')
@@ -725,7 +789,7 @@ def review(company_id, year):
                            company=dict(company), year=year,
                            questions=questions_dict,
                            answers=answers, evidence=evidence_map,
-                           session=session, ratios=ratios, overall=overall)
+                           session=session_info, ratios=ratios, overall=overall)
 
 
 def _calculate_ratios(conn, company_id, year, answers=None):
@@ -767,62 +831,62 @@ def _calculate_ratios(conn, company_id, year, answers=None):
 
 
 # ============================================================
-# 공시 제출
+# 공시 확정 및 상태 관리
 # ============================================================
 
-@bp_disclosure.route('/<company_id>/<int:year>/submit', methods=['POST'])
-def submit(company_id, year):
-    """공시 제출 처리"""
+@bp_disclosure.route('/confirm', methods=['POST'])
+def confirm_disclosure():
+    """공시 자료 확정 처리"""
+    company_id = session.get('current_company_id')
+    year = session.get('current_year')
+    
+    if not company_id or not year:
+        return redirect(url_for('company.index'))
+        
     with get_db() as conn:
-        company = _get_company_or_404(conn, company_id)
-        _get_target_or_404(conn, company_id, year)
-
         session_row = conn.execute(
-            'SELECT * FROM ipd_sessions WHERE company_id=? AND year=?', (company_id, year)
+            'SELECT completion_rate FROM ipd_sessions WHERE company_id=? AND year=?', (company_id, year)
         ).fetchone()
-
-        if not session_row:
-            flash('공시 세션이 없습니다. 먼저 답변을 입력하세요.', 'error')
-            return redirect(url_for('disclosure.dashboard', company_id=company_id, year=year))
-
-        if session_row['completion_rate'] < 100:
-            flash(f'미완료 항목이 있습니다. (현재 진행률: {session_row["completion_rate"]}%)', 'warning')
-            return redirect(url_for('disclosure.review', company_id=company_id, year=year))
-
-        # 이미 제출된 경우
-        if session_row['status'] == 'submitted':
-            flash('성공적으로 제출되었습니다.', 'success')
-            return redirect(url_for('disclosure.review', company_id=company_id, year=year))
-
-        # 제출 처리
-        answers = {r['question_id']: r['value'] for r in conn.execute(
-            'SELECT question_id, value FROM ipd_answers WHERE company_id=? AND year=? AND deleted_at IS NULL',
-            (company_id, year)
-        ).fetchall()}
-
-        submission_id = _generate_uuid()
-        confirmation = f"IPD-{year}-{submission_id[:8].upper()}"
-
-        conn.execute('''
-            INSERT INTO ipd_submissions
-            (id, session_id, company_id, year, submission_data, submitted_at, confirmation_number, status)
-            VALUES (?,?,?,?,?,CURRENT_TIMESTAMP,?,'submitted')
-        ''', (submission_id, session_row['id'], company_id, year,
-              json.dumps(answers, ensure_ascii=False), confirmation))
-
-        conn.execute('''
-            UPDATE ipd_sessions SET status='submitted', submitted_at=CURRENT_TIMESTAMP
-            WHERE company_id=? AND year=?
-        ''', (company_id, year))
-
+        
+        if not session_row or session_row['completion_rate'] < 100:
+            flash('모든 항목을 작성해야 확정이 가능합니다.', 'warning')
+            return redirect(url_for('disclosure.review'))
+            
         conn.execute(
-            'UPDATE ipd_targets SET status="submitted" WHERE company_id=? AND year=?',
+            'UPDATE ipd_sessions SET status="confirmed", updated_at=CURRENT_TIMESTAMP WHERE company_id=? AND year=?',
+            (company_id, year)
+        )
+        conn.execute(
+            'UPDATE ipd_targets SET status="confirmed" WHERE company_id=? AND year=?',
             (company_id, year)
         )
         conn.commit()
+        
+    flash('공시 자료가 확정되었습니다. 이제 자료를 생성할 수 있습니다.', 'success')
+    return redirect(url_for('disclosure.review'))
 
-    flash(f'공시 제출 완료. 확인번호: {confirmation}', 'success')
-    return redirect(url_for('disclosure.review', company_id=company_id, year=year))
+@bp_disclosure.route('/unconfirm', methods=['POST'])
+def unconfirm_disclosure():
+    """공시 자료 확정 취소 (작성 가능 상태로 복구)"""
+    company_id = session.get('current_company_id')
+    year = session.get('current_year')
+    
+    if not company_id or not year:
+        return redirect(url_for('company.index'))
+        
+    with get_db() as conn:
+        conn.execute(
+            'UPDATE ipd_sessions SET status="completed", updated_at=CURRENT_TIMESTAMP WHERE company_id=? AND year=?',
+            (company_id, year)
+        )
+        conn.execute(
+            'UPDATE ipd_targets SET status="completed" WHERE company_id=? AND year=?',
+            (company_id, year)
+        )
+        conn.commit()
+        
+    flash('확정이 취소되었습니다. 다시 수정할 수 있습니다.', 'info')
+    return redirect(url_for('disclosure.review'))
 
 
 # ============================================================
@@ -834,18 +898,17 @@ def get_available_years(company_id):
     """특정 회사의 데이터가 존재하는 연도 목록 조회"""
     try:
         with get_db() as conn:
-            # ipd_targets 또는 ipd_answers에서 연도 추출
+            # ipd_targets와 ipd_sessions를 JOIN하여 연도와 상태 추출
             rows = conn.execute('''
-                SELECT DISTINCT year FROM ipd_targets 
-                WHERE company_id = ? 
-                UNION 
-                SELECT DISTINCT year FROM ipd_answers 
-                WHERE company_id = ? AND deleted_at IS NULL
-                ORDER BY year DESC
-            ''', (company_id, company_id)).fetchall()
+                SELECT t.year, COALESCE(s.status, 'draft') as status
+                FROM ipd_targets t
+                LEFT JOIN ipd_sessions s ON t.company_id = s.company_id AND t.year = s.year
+                WHERE t.company_id = ?
+                ORDER BY t.year DESC
+            ''', (company_id,)).fetchall()
             
-            years = [row['year'] for row in rows]
-            return jsonify({'success': True, 'years': years})
+            years_data = [{'year': row['year'], 'status': row['status']} for row in rows]
+            return jsonify({'success': True, 'years': years_data})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
@@ -887,10 +950,18 @@ def get_year_answers(company_id, year):
                         pass
                 data.append(item)
                 
+            # 해당 연도의 세션 상태 조회
+            session_row = conn.execute(
+                'SELECT status FROM ipd_sessions WHERE company_id=? AND year=?',
+                (company_id, year)
+            ).fetchone()
+            year_status = session_row['status'] if session_row else 'draft'
+            
             return jsonify({
                 'success': True,
                 'company_id': company_id,
                 'year': year,
+                'status': year_status,
                 'answers': data
             })
     except Exception as e:

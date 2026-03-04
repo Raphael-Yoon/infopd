@@ -102,6 +102,33 @@ def add_company():
     return redirect(url_for('company.index'))
 
 
+@bp_company.route('/company/<company_id>/edit', methods=['POST'])
+def edit_company(company_id):
+    """회사 명칭 수정"""
+    new_name = request.form.get('name', '').strip()
+    if not new_name:
+        flash('회사명을 입력하세요.', 'warning')
+        return redirect(url_for('company.index'))
+
+    with get_db() as conn:
+        # 중복 체크 (본인 제외)
+        existing = conn.execute(
+            'SELECT id FROM ipd_companies WHERE name = ? AND id != ?', (new_name, company_id)
+        ).fetchone()
+        if existing:
+            flash(f'"{new_name}" 은(는) 이미 존재하는 회사명입니다.', 'warning')
+            return redirect(url_for('company.index'))
+
+        conn.execute(
+            'UPDATE ipd_companies SET name = ? WHERE id = ?',
+            (new_name, company_id)
+        )
+        conn.commit()
+
+    flash('회사 명칭이 수정되었습니다.', 'success')
+    return redirect(url_for('company.index'))
+
+
 @bp_company.route('/company/<company_id>/delete', methods=['POST'])
 def delete_company(company_id):
     """회사 삭제 (연관 데이터 전체 포함)"""

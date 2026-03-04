@@ -15,12 +15,46 @@
 
 <!-- Snowball Information Disclosure Dashboard (link11 Main Screen) -->
 <div id="dashboard-section" class="animate-fade-in">
+    <div class="mb-4">
+        <a href="{{ url_for('company.index') }}" class="btn btn-white shadow-sm rounded-pill px-4 py-2 fw-bold border d-inline-flex align-items-center gap-2">
+            <i class="fas fa-home text-primary"></i> 기업 목록(Home)으로
+        </a>
+    </div>
     <!-- Overall Progress (Top Stats) -->
     <div
         style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 16px; padding: 40px; margin-bottom: 30px; box-shadow: var(--shadow-main); transition: all 0.3s ease;">
         <div style="display: flex; justify-content: space-between; margin-bottom: 20px; align-items: center;">
-            <span style="font-weight: 800; color: var(--text-main); font-size: 1.15rem;">전체 진행률</span>
-            <span style="font-weight: 800; color: #3b82f6; font-size: 1.5rem;">{{ overall }}%</span>
+            <div class="d-flex align-items-center gap-3">
+                <span style="font-weight: 800; color: var(--text-main); font-size: 1.15rem;">전체 진행률</span>
+                {% if overall == 100 %}
+                    {% if session and session.status == 'confirmed' %}
+                    <span class="badge bg-primary-subtle text-primary border border-primary px-3 py-1 rounded-pill fw-bold">
+                        <i class="fas fa-lock me-1"></i> 데이터 확정됨
+                    </span>
+                    {% else %}
+                    <span class="badge bg-success-subtle text-success border border-success px-3 py-1 rounded-pill fw-bold animate-pulse">
+                        작성 완료 (확정 대기)
+                    </span>
+                    {% endif %}
+                {% endif %}
+            </div>
+            <div class="d-flex align-items-center gap-4">
+                <span style="font-weight: 800; color: #3b82f6; font-size: 1.5rem;">{{ overall }}%</span>
+                
+                {% if session and session.status == 'confirmed' %}
+                <a href="/disclosure/review" class="btn btn-primary fw-bold px-4 py-2 rounded-pill shadow-sm" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); border: none;">
+                    확정된 자료 보기 <i class="fas fa-lock ms-2"></i>
+                </a>
+                {% elif overall == 100 %}
+                <a href="/disclosure/review" class="btn btn-primary fw-bold px-4 py-2 rounded-pill shadow-sm" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); border: none;">
+                    리뷰 및 확정하기 <i class="fas fa-check-double ms-2"></i>
+                </a>
+                {% else %}
+                <a href="/disclosure/review" class="btn btn-white fw-bold px-4 py-2 rounded-pill shadow-sm border" style="color: var(--text-main);">
+                    전체 작성 내용 검토 <i class="fas fa-search ms-2 text-primary"></i>
+                </a>
+                {% endif %}
+            </div>
         </div>
         <div style="height: 16px; background: var(--bg-main); border-radius: 20px; overflow: hidden; margin-bottom: 15px;">
             <div
@@ -71,12 +105,12 @@
     </div>
 
     <!-- Category Grid (Categories leading to separate screens) -->
-    <h3 class="mb-4" style="font-weight: 800; color: #1e293b; font-size: 1.3rem;"><i
+    <h3 class="mb-4" style="font-weight: 800; color: var(--text-main); font-size: 1.3rem;"><i
             class="fas fa-folder-open text-primary me-2"></i>카테고리별 질문</h3>
     <div class="category-grid mb-5">
         {% for cat in categories %}
         <div class="category-card"
-            onclick="location.href='/disclosure/{{ company.id }}/{{ year }}/work?category={{ cat.id }}'">
+            onclick="location.href='/disclosure/work?category={{ cat.id }}'">
             <div class="category-header">
                 <div
                     class="category-icon stat-icon {% if cat.id == 1 %}investment{% elif cat.id == 2 %}personnel{% elif cat.id == 3 %}certification{% else %}activity{% endif %}">
@@ -92,7 +126,7 @@
                     {{ '완료' if cat.rate == 100 else ('진행' if cat.rate > 0 else '미착수') }}
                 </div>
             </div>
-            <div style="height: 6px; background: #e2e8f0; border-radius: 10px; overflow: hidden; margin-top: 15px;">
+            <div style="height: 6px; background: var(--bg-main); border-radius: 10px; overflow: hidden; margin-top: 15px;">
                 <div
                     style="height: 100%; background: {% if cat.rate == 100 %}#10b981{% else %}#3b82f6{% endif %}; width: {{ cat.rate }}%; border-radius: 10px;">
                 </div>

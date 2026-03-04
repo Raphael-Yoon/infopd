@@ -121,7 +121,7 @@ body {
 .q-title {
     font-size: 1.1rem;
     font-weight: 700;
-    color: #1e293b;
+    color: var(--text-main);
     margin-left: 10px;
 }
 
@@ -139,13 +139,14 @@ body {
 }
 
 .help-box {
-    background: #f1f5f9;
+    background: var(--bg-main);
     padding: 12px 20px;
     border-radius: 8px;
     font-size: 0.95rem;
-    color: #475569;
+    color: var(--text-muted);
     margin-bottom: 20px;
     font-weight: 500;
+    border: 1px solid var(--border-color);
 }
 
 /* Snowball Professional Input (Right Aligned) */
@@ -153,7 +154,7 @@ body {
     position: relative;
     display: flex;
     align-items: center;
-    border: 1px solid #dae1e7;
+    border: 1px solid var(--border-color);
     border-radius: 4px;
     overflow: hidden;
 }
@@ -165,23 +166,23 @@ body {
     font-weight: 800 !important;
     padding: 10px 20px !important;
     flex-grow: 1;
-    color: #1e293b;
-    background: #ffffff !important;
+    color: var(--text-main);
+    background: var(--input-bg) !important;
 }
 
 .unit-label {
     padding: 0 15px;
     font-weight: 800;
-    color: #1e293b;
+    color: var(--text-main);
     font-size: 1.1rem;
-    background: white;
+    background: var(--input-bg);
 }
 
 /* YES/NO Buttons (link11-style) */
 .q-select-btn {
-    border: 1px solid #dae1e7;
-    background: #ffffff;
-    color: #1e293b;
+    border: 1px solid var(--border-color);
+    background: var(--bg-surface);
+    color: var(--text-main);
     font-size: 1.1rem !important;
     font-weight: 800 !important;
     border-radius: 4px !important;
@@ -205,8 +206,8 @@ body {
 
 /* Investment Group Specific Layout (Snowball 3-Column Sync) */
 .investment-group-container {
-    background: #ffffff;
-    border: 1px solid #dae1e7;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
     border-radius: 12px;
     padding: 30px;
     margin-bottom: 25px;
@@ -219,8 +220,8 @@ body {
 }
 
 .summary-row {
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
     padding: 15px 25px;
     border-radius: 8px;
     display: flex;
@@ -228,7 +229,7 @@ body {
     align-items: center;
     margin-bottom: 10px;
     font-weight: 800;
-    color: #1e293b;
+    color: var(--text-main);
     font-size: 1.1rem;
 }
 
@@ -249,6 +250,15 @@ body {
     animation: flashBlue 2s infinite alternate;
 }
 
+.hover-opacity-100 {
+    opacity: 0.4 !important;
+    transition: opacity 0.2s ease !important;
+}
+
+.hover-opacity-100:hover {
+    opacity: 1 !important;
+}
+
 @keyframes flashBlue {
     from {
         border-color: #dbeafe;
@@ -266,8 +276,8 @@ body {
 }
 
 .dashed-card {
-    border: 2px dashed #cbd5e1 !important;
-    background: #ffffff;
+    border: 2px dashed var(--border-color) !important;
+    background: var(--bg-surface);
     padding: 20px !important;
     border-radius: 10px !important;
     text-align: center;
@@ -700,7 +710,7 @@ body {
 }
 
 .stat-label {
-    color: #64748b;
+    color: var(--text-muted);
     font-size: 0.95rem;
     font-weight: 600;
     text-transform: uppercase;
@@ -821,4 +831,117 @@ body {
 [data-theme='dark'] .logo-img {
     filter: invert(1) hue-rotate(180deg) brightness(1.5) contrast(1.2);
     mix-blend-mode: screen !important;
+}
+
+/* --- Bootstrap Overrides for Dark Mode --- */
+[data-theme='dark'] .bg-light, 
+[data-theme='dark'] .bg-light-subtle {
+    background-color: var(--bg-main) !important;
+    color: var(--text-main) !important;
+}
+
+[data-theme='dark'] .bg-white {
+    background-color: var(--bg-surface) !important;
+    color: var(--text-main) !important;
+}
+
+[data-theme='dark'] .text-dark {
+    color: var(--text-main) !important;
+}
+
+[data-theme='dark'] .text-muted {
+    color: var(--text-muted) !important;
+}
+
+[data-theme='dark'] .table {
+    --bs-table-bg: transparent;
+    --bs-table-color: var(--text-main);
+    --bs-table-border-color: var(--border-color);
+    --bs-table-hover-bg: rgba(255, 255, 255, 0.05);
+    --bs-table-hover-color: var(--text-main);
+    color: var(--text-main) !important;
+}
+
+[data-theme='dark'] .table-hover tbody tr:hover * {
+    color: var(--text-main) !important;
+}
+
+[data-theme='dark'] .table-hover tbody tr:hover .text-muted {
+    color: var(--text-muted) !important;
+}
+
+[data-theme='dark'] .modal-content {
+    background-color: var(--bg-surface) !important;
+    color: var(--text-main);
+    border: 1px solid var(--border-color);
+}
+
+[data-theme='dark'] .form-control,
+[data-theme='dark'] .form-select {
+    background-color: var(--input-bg) !important;
+    color: var(--text-main) !important;
+    border-color: var(--border-color) !important;
+}
+
+[data-theme='dark'] .form-control::placeholder {
+    color: var(--text-muted);
+    opacity: 0.6;
+}
+
+[data-theme='dark'] .progress {
+    background-color: var(--bg-main) !important;
+}
+
+[data-theme='dark'] .breadcrumb-item a {
+    color: var(--primary-color);
+}
+
+[data-theme='dark'] .breadcrumb-item.active,
+[data-theme='dark'] .breadcrumb-item::before {
+    color: var(--text-muted) !important;
+}
+
+[data-theme='dark'] .stat-value {
+    color: var(--text-main);
+}
+
+[data-theme='dark'] .stat-card {
+    background-color: var(--bg-surface) !important;
+}
+
+[data-theme='dark'] .btn-link {
+    color: var(--primary-color);
+}
+
+/* --- Enterprise Card Styles (index.html) --- */
+.progress-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    box-shadow: var(--shadow-main);
+    transition: all 0.3s ease;
+}
+
+.progress-card:hover {
+    border-color: var(--primary-color);
+}
+
+/* --- Button Theme Fixes --- */
+.btn-white {
+    background-color: var(--bg-surface);
+    color: var(--text-main);
+    border-color: var(--border-color);
+}
+
+[data-theme='dark'] .btn-white:hover {
+    background-color: var(--bg-main);
+    color: var(--text-main);
+}
+
+/* Dark Mode Hover Fix for Stats and category cards */
+[data-theme='dark'] .stat-card:hover .stat-value,
+[data-theme='dark'] .stat-card:hover .stat-label,
+[data-theme='dark'] .category-card:hover .category-title,
+[data-theme='dark'] .category-card:hover .category-stats {
+    color: var(--text-main) !important;
 }
