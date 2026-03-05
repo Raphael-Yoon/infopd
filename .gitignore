@@ -11,10 +11,8 @@ venv/
 dist/
 build/
 
-# 데이터베이스 (사용자 요청으로 추적 허용)
-# infopd.db
-# *.db
-# *.sqlite3
+# 구 데이터베이스 (프로젝트 이름 변경 이전 파일)
+infopd.db
 
 # 업로드 파일 (증빙 자료)
 uploads/
