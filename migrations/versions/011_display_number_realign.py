@@ -55,7 +55,7 @@ DISPLAY_NUMBER_MAP = {
 def upgrade(conn):
     for qid, display_num in DISPLAY_NUMBER_MAP.items():
         conn.execute(
-            'UPDATE ipd_questions SET display_number=? WHERE id=?',
+            'UPDATE isd_questions SET display_number=? WHERE id=?',
             (display_num, qid)
         )
     conn.commit()
@@ -96,7 +96,7 @@ def downgrade(conn):
     }
     for qid, display_num in OLD_MAP.items():
         conn.execute(
-            'UPDATE ipd_questions SET display_number=? WHERE id=?',
+            'UPDATE isd_questions SET display_number=? WHERE id=?',
             (display_num, qid)
         )
     conn.commit()

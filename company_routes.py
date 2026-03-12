@@ -12,7 +12,7 @@ bp_company = Blueprint('company', __name__)
 def _get_progress(conn, company_id, year):
     """회사+연도의 완료율 반환"""
     row = conn.execute(
-        'SELECT completion_rate, status FROM ipd_sessions WHERE company_id = ? AND year = ?',
+        'SELECT completion_rate, status FROM isd_sessions WHERE company_id = ? AND year = ?',
         (company_id, year)
     ).fetchone()
     if row:
@@ -22,10 +22,10 @@ def _get_progress(conn, company_id, year):
 
 def _delete_target_data(conn, company_id, year):
     """특정 연도의 공시 데이터 전체 삭제"""
-    conn.execute('DELETE FROM ipd_evidence WHERE company_id = ? AND year = ?', (company_id, year))
-    conn.execute('DELETE FROM ipd_answers WHERE company_id = ? AND year = ?', (company_id, year))
-    conn.execute('DELETE FROM ipd_submissions WHERE company_id = ? AND year = ?', (company_id, year))
-    conn.execute('DELETE FROM ipd_sessions WHERE company_id = ? AND year = ?', (company_id, year))
+    conn.execute('DELETE FROM isd_evidence WHERE company_id = ? AND year = ?', (company_id, year))
+    conn.execute('DELETE FROM isd_answers WHERE company_id = ? AND year = ?', (company_id, year))
+    conn.execute('DELETE FROM isd_submissions WHERE company_id = ? AND year = ?', (company_id, year))
+    conn.execute('DELETE FROM isd_sessions WHERE company_id = ? AND year = ?', (company_id, year))
 
 
 # ============================================================
@@ -37,13 +37,13 @@ def index():
     """메인 페이지 — 회사+연도 목록 및 진행률"""
     with get_db() as conn:
         companies = conn.execute(
-            'SELECT * FROM ipd_companies ORDER BY name'
+            'SELECT * FROM isd_companies ORDER BY name'
         ).fetchall()
 
         result = []
         for c in companies:
             targets = conn.execute(
-                'SELECT * FROM ipd_targets WHERE company_id = ? ORDER BY year DESC',
+                'SELECT * FROM isd_targets WHERE company_id = ? ORDER BY year DESC',
                 (c['id'],)
             ).fetchall()
 
@@ -81,7 +81,7 @@ def add_company():
 
     with get_db() as conn:
         existing = conn.execute(
-            'SELECT id FROM ipd_companies WHERE name = ?', (name,)
+            'SELECT id FROM isd_companies WHERE name = ?', (name,)
         ).fetchone()
         if existing:
             flash(f'"{name}" 은(는) 이미 등록된 회사입니다.', 'warning')
@@ -89,7 +89,7 @@ def add_company():
 
         company_id = generate_uuid()
         conn.execute(
-            'INSERT INTO ipd_companies (id, name) VALUES (?, ?)',
+            'INSERT INTO isd_companies (id, name) VALUES (?, ?)',
             (company_id, name)
         )
         conn.commit()
@@ -109,14 +109,14 @@ def edit_company(company_id):
     with get_db() as conn:
         # 중복 체크 (본인 제외)
         existing = conn.execute(
-            'SELECT id FROM ipd_companies WHERE name = ? AND id != ?', (new_name, company_id)
+            'SELECT id FROM isd_companies WHERE name = ? AND id != ?', (new_name, company_id)
         ).fetchone()
         if existing:
             flash(f'"{new_name}" 은(는) 이미 존재하는 회사명입니다.', 'warning')
             return redirect(url_for('company.index'))
 
         conn.execute(
-            'UPDATE ipd_companies SET name = ? WHERE id = ?',
+            'UPDATE isd_companies SET name = ? WHERE id = ?',
             (new_name, company_id)
         )
         conn.commit()
@@ -130,7 +130,7 @@ def delete_company(company_id):
     """회사 삭제 (연관 데이터 전체 포함)"""
     with get_db() as conn:
         company = conn.execute(
-            'SELECT name FROM ipd_companies WHERE id = ?', (company_id,)
+            'SELECT name FROM isd_companies WHERE id = ?', (company_id,)
         ).fetchone()
         if not company:
             flash('존재하지 않는 회사입니다.', 'error')
@@ -139,12 +139,12 @@ def delete_company(company_id):
         name = company['name']
         conn.execute('PRAGMA foreign_keys = OFF')
         targets = conn.execute(
-            'SELECT year FROM ipd_targets WHERE company_id = ?', (company_id,)
+            'SELECT year FROM isd_targets WHERE company_id = ?', (company_id,)
         ).fetchall()
         for t in targets:
             _delete_target_data(conn, company_id, t['year'])
-        conn.execute('DELETE FROM ipd_targets WHERE company_id = ?', (company_id,))
-        conn.execute('DELETE FROM ipd_companies WHERE id = ?', (company_id,))
+        conn.execute('DELETE FROM isd_targets WHERE company_id = ?', (company_id,))
+        conn.execute('DELETE FROM isd_companies WHERE id = ?', (company_id,))
         conn.execute('PRAGMA foreign_keys = ON')
         conn.commit()
 
@@ -170,14 +170,14 @@ def add_year(company_id):
 
     with get_db() as conn:
         company = conn.execute(
-            'SELECT name FROM ipd_companies WHERE id = ?', (company_id,)
+            'SELECT name FROM isd_companies WHERE id = ?', (company_id,)
         ).fetchone()
         if not company:
             flash('존재하지 않는 회사입니다.', 'error')
             return redirect(url_for('company.index'))
 
         existing = conn.execute(
-            'SELECT id FROM ipd_targets WHERE company_id = ? AND year = ?',
+            'SELECT id FROM isd_targets WHERE company_id = ? AND year = ?',
             (company_id, year)
         ).fetchone()
         if existing:
@@ -185,7 +185,7 @@ def add_year(company_id):
             return redirect(url_for('company.index'))
 
         conn.execute(
-            'INSERT INTO ipd_targets (id, company_id, year) VALUES (?, ?, ?)',
+            'INSERT INTO isd_targets (id, company_id, year) VALUES (?, ?, ?)',
             (generate_uuid(), company_id, year)
         )
         conn.commit()
@@ -199,7 +199,7 @@ def delete_year(company_id, year):
     """연도 삭제 (해당 연도 공시 데이터 포함)"""
     with get_db() as conn:
         target = conn.execute(
-            'SELECT id FROM ipd_targets WHERE company_id = ? AND year = ?',
+            'SELECT id FROM isd_targets WHERE company_id = ? AND year = ?',
             (company_id, year)
         ).fetchone()
         if not target:
@@ -209,7 +209,7 @@ def delete_year(company_id, year):
         conn.execute('PRAGMA foreign_keys = OFF')
         _delete_target_data(conn, company_id, year)
         conn.execute(
-            'DELETE FROM ipd_targets WHERE company_id = ? AND year = ?',
+            'DELETE FROM isd_targets WHERE company_id = ? AND year = ?',
             (company_id, year)
         )
         conn.execute('PRAGMA foreign_keys = ON')

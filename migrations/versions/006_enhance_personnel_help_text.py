@@ -32,7 +32,7 @@ def upgrade(conn):
     ]
     for qid, help_text in updates:
         conn.execute(
-            'UPDATE ipd_questions SET help_text = ? WHERE id = ?',
+            'UPDATE isd_questions SET help_text = ? WHERE id = ?',
             (help_text, qid)
         )
 
@@ -46,6 +46,6 @@ def downgrade(conn):
     ]
     for qid, help_text in originals:
         conn.execute(
-            'UPDATE ipd_questions SET help_text = ? WHERE id = ?',
+            'UPDATE isd_questions SET help_text = ? WHERE id = ?',
             (help_text, qid)
         )

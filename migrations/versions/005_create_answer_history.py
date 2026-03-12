@@ -1,5 +1,5 @@
 """
-Audit Trail: ipd_answer_history 테이블 생성
+Audit Trail: isd_answer_history 테이블 생성
 
 답변 변경 이력을 보존하여 감사 추적(Audit Trail)을 지원한다.
 K-SOX 공시 감사 기준: 누가, 언제, 무엇을 변경했는지 기록 필수.
@@ -8,7 +8,7 @@ K-SOX 공시 감사 기준: 누가, 언제, 무엇을 변경했는지 기록 필
 
 def upgrade(conn):
     conn.execute('''
-        CREATE TABLE IF NOT EXISTS ipd_answer_history (
+        CREATE TABLE IF NOT EXISTS isd_answer_history (
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
             company_id  TEXT    NOT NULL,
             year        INTEGER NOT NULL,
@@ -21,10 +21,10 @@ def upgrade(conn):
     ''')
     conn.execute(
         'CREATE INDEX IF NOT EXISTS idx_answer_history_target '
-        'ON ipd_answer_history (company_id, year, question_id)'
+        'ON isd_answer_history (company_id, year, question_id)'
     )
 
 
 def downgrade(conn):
-    conn.execute('DROP TABLE IF EXISTS ipd_answer_history')
+    conn.execute('DROP TABLE IF EXISTS isd_answer_history')
     conn.execute('DROP INDEX IF EXISTS idx_answer_history_target')

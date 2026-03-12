@@ -293,7 +293,7 @@ def upgrade(conn):
         dep_ids = json.dumps(q["dependent_question_ids"], ensure_ascii=False) if "dependent_question_ids" in q else None
 
         conn.execute('''
-            INSERT INTO ipd_questions
+            INSERT INTO isd_questions
             (id, display_number, level, category_id, category, subcategory,
              text, type, options, parent_question_id, dependent_question_ids,
              sort_order, help_text)
@@ -309,5 +309,5 @@ def upgrade(conn):
 
 
 def downgrade(conn):
-    conn.execute('DELETE FROM ipd_questions')
+    conn.execute('DELETE FROM isd_questions')
     print("  [OK] 질문 데이터 삭제 완료.")

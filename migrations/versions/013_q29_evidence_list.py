@@ -17,7 +17,7 @@ import json
 
 def upgrade(conn):
     conn.execute(
-        "UPDATE ipd_questions SET evidence_list=? WHERE id='Q29'",
+        "UPDATE isd_questions SET evidence_list=? WHERE id='Q29'",
         (json.dumps(["CISO/CPO 활동 근거 서류 (회의록, 보고자료 등)"], ensure_ascii=False),)
     )
     conn.commit()
@@ -25,6 +25,6 @@ def upgrade(conn):
 
 def downgrade(conn):
     conn.execute(
-        "UPDATE ipd_questions SET evidence_list=NULL WHERE id='Q29'"
+        "UPDATE isd_questions SET evidence_list=NULL WHERE id='Q29'"
     )
     conn.commit()

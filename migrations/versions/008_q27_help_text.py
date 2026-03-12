@@ -9,7 +9,7 @@ Q27 help_text 보강 — 주요 투자 항목 입력 가이드 구체화
 
 def upgrade(conn):
     conn.execute(
-        "UPDATE ipd_questions SET help_text = ? WHERE id = 'Q27'",
+        "UPDATE isd_questions SET help_text = ? WHERE id = 'Q27'",
         (
             '투자 유형별로 항목명과 금액을 구체적으로 기재하세요.\n'
             '예) 유/무형자산: 방화벽 장비 구입(○○만원), 보안SW 라이선스(○○만원)\n'
@@ -21,6 +21,6 @@ def upgrade(conn):
 
 def downgrade(conn):
     conn.execute(
-        "UPDATE ipd_questions SET help_text = ? WHERE id = 'Q27'",
+        "UPDATE isd_questions SET help_text = ? WHERE id = 'Q27'",
         ('예: 방화벽 도입, 보안관제 서비스, 취약점 진단 등',)
     )

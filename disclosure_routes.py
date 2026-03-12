@@ -121,7 +121,7 @@ def _get_all_dependent_ids(conn, question_ids):
     all_ids = list(question_ids)
     for q_id in question_ids:
         row = conn.execute(
-            'SELECT dependent_question_ids FROM ipd_questions WHERE id = ?', (q_id,)
+            'SELECT dependent_question_ids FROM isd_questions WHERE id = ?', (q_id,)
         ).fetchone()
         if row and row['dependent_question_ids']:
             try:
@@ -137,12 +137,12 @@ def _update_session_progress(conn, company_id, year):
     """세션 진행률 자동 업데이트"""
     try:
         all_questions = [dict(r) for r in conn.execute(
-            'SELECT * FROM ipd_questions ORDER BY category_id, sort_order'
+            'SELECT * FROM isd_questions ORDER BY category_id, sort_order'
         ).fetchall()]
         questions_dict = {q['id']: q for q in all_questions}
 
         answers = {r['question_id']: r['value'] for r in conn.execute(
-            'SELECT question_id, value FROM ipd_answers WHERE company_id=? AND year=? AND deleted_at IS NULL',
+            'SELECT question_id, value FROM isd_answers WHERE company_id=? AND year=? AND deleted_at IS NULL',
             (company_id, year)
         ).fetchall()}
 
@@ -162,7 +162,7 @@ def _update_session_progress(conn, company_id, year):
         # 현재 세션의 상태 확인 (이미 확정된 경우 유지)
         existing_status = None
         existing_row = conn.execute(
-            'SELECT status FROM ipd_sessions WHERE company_id=? AND year=?', (company_id, year)
+            'SELECT status FROM isd_sessions WHERE company_id=? AND year=?', (company_id, year)
         ).fetchone()
         if existing_row:
             existing_status = existing_row['status']
@@ -173,12 +173,12 @@ def _update_session_progress(conn, company_id, year):
             status = 'completed' if rate == 100 else ('in_progress' if answered > 0 else 'draft')
 
         existing = conn.execute(
-            'SELECT id FROM ipd_sessions WHERE company_id=? AND year=?', (company_id, year)
+            'SELECT id FROM isd_sessions WHERE company_id=? AND year=?', (company_id, year)
         ).fetchone()
 
         if existing:
             conn.execute('''
-                UPDATE ipd_sessions
+                UPDATE isd_sessions
                 SET total_questions=?, answered_questions=?, completion_rate=?,
                     status=?,
                     updated_at=CURRENT_TIMESTAMP
@@ -186,7 +186,7 @@ def _update_session_progress(conn, company_id, year):
             ''', (total, answered, rate, status, company_id, year))
         else:
             conn.execute('''
-                INSERT INTO ipd_sessions
+                INSERT INTO isd_sessions
                 (id, company_id, year, status, total_questions, answered_questions, completion_rate)
                 VALUES (?,?,?,?,?,?,?)
             ''', (generate_uuid(), company_id, year, status, total, answered, rate))
@@ -198,7 +198,7 @@ def _update_session_progress(conn, company_id, year):
 def _mark_dependents_na(conn, question_id, company_id, year):
     """상위 질문 NO 시 하위 질문을 N/A로 표시"""
     row = conn.execute(
-        'SELECT dependent_question_ids FROM ipd_questions WHERE id=?', (question_id,)
+        'SELECT dependent_question_ids FROM isd_questions WHERE id=?', (question_id,)
     ).fetchone()
     if not row or not row['dependent_question_ids']:
         return
@@ -209,17 +209,17 @@ def _mark_dependents_na(conn, question_id, company_id, year):
     all_dep = _get_all_dependent_ids(conn, dep_ids)
     for dep_id in all_dep:
         existing = conn.execute(
-            'SELECT id FROM ipd_answers WHERE question_id=? AND company_id=? AND year=?',
+            'SELECT id FROM isd_answers WHERE question_id=? AND company_id=? AND year=?',
             (dep_id, company_id, year)
         ).fetchone()
         if existing:
             conn.execute('''
-                UPDATE ipd_answers SET value='N/A', status='skipped',
+                UPDATE isd_answers SET value='N/A', status='skipped',
                 updated_at=CURRENT_TIMESTAMP, deleted_at=NULL WHERE id=?
             ''', (existing['id'],))
         else:
             conn.execute('''
-                INSERT INTO ipd_answers (id, question_id, company_id, year, value, status)
+                INSERT INTO isd_answers (id, question_id, company_id, year, value, status)
                 VALUES (?,?,?,?,'N/A','skipped')
             ''', (generate_uuid(), dep_id, company_id, year))
 
@@ -227,7 +227,7 @@ def _mark_dependents_na(conn, question_id, company_id, year):
 def _clear_na_from_dependents(conn, question_id, company_id, year):
     """상위 질문 YES 복귀 시 N/A 답변 삭제"""
     row = conn.execute(
-        'SELECT dependent_question_ids FROM ipd_questions WHERE id=?', (question_id,)
+        'SELECT dependent_question_ids FROM isd_questions WHERE id=?', (question_id,)
     ).fetchone()
     if not row or not row['dependent_question_ids']:
         return
@@ -238,14 +238,14 @@ def _clear_na_from_dependents(conn, question_id, company_id, year):
     all_dep = _get_all_dependent_ids(conn, dep_ids)
     for dep_id in all_dep:
         conn.execute('''
-            DELETE FROM ipd_answers
+            DELETE FROM isd_answers
             WHERE question_id=? AND company_id=? AND year=? AND value='N/A' AND status='skipped'
         ''', (dep_id, company_id, year))
 
 
 def _get_company_or_404(conn, company_id):
     company = conn.execute(
-        'SELECT * FROM ipd_companies WHERE id=?', (company_id,)
+        'SELECT * FROM isd_companies WHERE id=?', (company_id,)
     ).fetchone()
     if not company:
         abort(404)
@@ -254,7 +254,7 @@ def _get_company_or_404(conn, company_id):
 
 def _get_target_or_404(conn, company_id, year):
     target = conn.execute(
-        'SELECT * FROM ipd_targets WHERE company_id=? AND year=?', (company_id, year)
+        'SELECT * FROM isd_targets WHERE company_id=? AND year=?', (company_id, year)
     ).fetchone()
     if not target:
         abort(404)
@@ -264,7 +264,7 @@ def _get_target_or_404(conn, company_id, year):
 def _build_evidence_map(conn, company_id, year):
     """증빙 자료를 질문 ID 기준으로 그룹화하여 반환"""
     rows = conn.execute(
-        'SELECT * FROM ipd_evidence WHERE company_id=? AND year=? ORDER BY uploaded_at DESC',
+        'SELECT * FROM isd_evidence WHERE company_id=? AND year=? ORDER BY uploaded_at DESC',
         (company_id, year)
     ).fetchall()
     evidence_map = {}
@@ -339,12 +339,12 @@ def dashboard():
         _get_target_or_404(conn, company_id, year)
 
         all_questions = [dict(r) for r in conn.execute(
-            'SELECT * FROM ipd_questions ORDER BY category_id, sort_order'
+            'SELECT * FROM isd_questions ORDER BY category_id, sort_order'
         ).fetchall()]
         questions_dict = {q['id']: q for q in all_questions}
 
         answers = {r['question_id']: r['value'] for r in conn.execute(
-            'SELECT question_id, value FROM ipd_answers WHERE company_id=? AND year=? AND deleted_at IS NULL',
+            'SELECT question_id, value FROM isd_answers WHERE company_id=? AND year=? AND deleted_at IS NULL',
             (company_id, year)
         ).fetchall()}
 
@@ -366,7 +366,7 @@ def dashboard():
                 cert_count += 1
         # 세션 정보 조회
         session_info = conn.execute(
-            'SELECT * FROM ipd_sessions WHERE company_id=? AND year=?', (company_id, year)
+            'SELECT * FROM isd_sessions WHERE company_id=? AND year=?', (company_id, year)
         ).fetchone() or {'status': 'draft'}
 
     return render_template('disclosure/dashboard.html',
@@ -395,17 +395,17 @@ def work():
         _get_target_or_404(conn, company_id, year)
 
         questions = [dict(r) for r in conn.execute(
-            'SELECT * FROM ipd_questions WHERE category_id=? ORDER BY sort_order',
+            'SELECT * FROM isd_questions WHERE category_id=? ORDER BY sort_order',
             (category_id,)
         ).fetchall()]
 
         all_questions = [dict(r) for r in conn.execute(
-            'SELECT * FROM ipd_questions ORDER BY sort_order'
+            'SELECT * FROM isd_questions ORDER BY sort_order'
         ).fetchall()]
         questions_dict = {q['id']: q for q in all_questions}
 
         answers_rows = conn.execute(
-            'SELECT question_id, value, id as answer_id FROM ipd_answers WHERE company_id=? AND year=? AND deleted_at IS NULL',
+            'SELECT question_id, value, id as answer_id FROM isd_answers WHERE company_id=? AND year=? AND deleted_at IS NULL',
             (company_id, year)
         ).fetchall()
         answers = {r['question_id']: r['value'] for r in answers_rows}
@@ -431,11 +431,11 @@ def work():
         current_category_name = next((c['name'] for c in sidebar_categories if c['id'] == category_id), "Unknown")
         
         # 전체 진행률 가져오기
-        ipd_session = conn.execute(
-            'SELECT completion_rate FROM ipd_sessions WHERE company_id=? AND year=?',
+        isd_session = conn.execute(
+            'SELECT completion_rate FROM isd_sessions WHERE company_id=? AND year=?',
             (company_id, year)
         ).fetchone()
-        overall_progress = ipd_session['completion_rate'] if ipd_session else 0
+        overall_progress = isd_session['completion_rate'] if isd_session else 0
         
         current_cat_stat = next((c for c in sidebar_categories if c['id'] == category_id), None)
         current_progress = current_cat_stat['rate'] if current_cat_stat else 0
@@ -484,7 +484,7 @@ def save_answer():
         with get_db() as conn:
             # 0-0. 확정 상태 수정 차단
             session_row = conn.execute(
-                'SELECT status FROM ipd_sessions WHERE company_id=? AND year=?',
+                'SELECT status FROM isd_sessions WHERE company_id=? AND year=?',
                 (company_id, year)
             ).fetchone()
             if session_row and session_row['status'] == 'confirmed':
@@ -508,7 +508,7 @@ def save_answer():
             personnel_ids = [QID.PER_TOTAL_EMPLOYEES, QID.PER_IT_EMPLOYEES, QID.PER_INTERNAL, QID.PER_EXTERNAL]
             if question_id in personnel_ids:
                 cursor = conn.execute('''
-                    SELECT question_id, value FROM ipd_answers
+                    SELECT question_id, value FROM isd_answers
                     WHERE question_id IN (?, ?, ?, ?) AND company_id = ? AND year = ? AND deleted_at IS NULL
                 ''', (*personnel_ids, company_id, year))
                 per_vals = {row['question_id']: row['value'] for row in cursor.fetchall()}
@@ -532,14 +532,14 @@ def save_answer():
             inv_b_ids = [QID.INV_SEC_DEPRECIATION, QID.INV_SEC_SERVICE, QID.INV_SEC_LABOR]
             if question_id in inv_b_ids or question_id == QID.INV_IT_AMOUNT:
                 cursor = conn.execute('''
-                    SELECT question_id, value FROM ipd_answers
+                    SELECT question_id, value FROM isd_answers
                     WHERE question_id IN (?, ?, ?) AND company_id = ? AND year = ? AND deleted_at IS NULL
                 ''', (*inv_b_ids, company_id, year))
                 b_vals = {row['question_id']: row['value'] for row in cursor.fetchall()}
                 b_vals[question_id] = value
 
                 cursor = conn.execute(
-                    'SELECT value FROM ipd_answers WHERE question_id=? AND company_id=? AND year=? AND deleted_at IS NULL',
+                    'SELECT value FROM isd_answers WHERE question_id=? AND company_id=? AND year=? AND deleted_at IS NULL',
                     (QID.INV_IT_AMOUNT, company_id, year)
                 )
                 q_a = cursor.fetchone()
@@ -555,7 +555,7 @@ def save_answer():
 
             # 3. 답변 저장 (UPSERT)
             existing = conn.execute(
-                'SELECT id, value FROM ipd_answers WHERE question_id=? AND company_id=? AND year=?',
+                'SELECT id, value FROM isd_answers WHERE question_id=? AND company_id=? AND year=?',
                 (question_id, company_id, year)
             ).fetchone()
 
@@ -563,27 +563,27 @@ def save_answer():
 
             if existing:
                 conn.execute('''
-                    UPDATE ipd_answers SET value=?, status='completed',
+                    UPDATE isd_answers SET value=?, status='completed',
                     updated_at=CURRENT_TIMESTAMP, deleted_at=NULL WHERE id=?
                 ''', (value, existing['id']))
                 answer_id = existing['id']
             else:
                 answer_id = generate_uuid()
                 conn.execute('''
-                    INSERT INTO ipd_answers (id, question_id, company_id, year, value, status)
+                    INSERT INTO isd_answers (id, question_id, company_id, year, value, status)
                     VALUES (?,?,?,?,?,'completed')
                 ''', (answer_id, question_id, company_id, year, value))
 
             # 3-1. Audit Trail: 답변 변경 이력 기록
             conn.execute(
-                '''INSERT INTO ipd_answer_history
+                '''INSERT INTO isd_answer_history
                    (company_id, year, question_id, old_value, new_value)
                    VALUES (?, ?, ?, ?, ?)''',
                 (company_id, year, question_id, old_value, value)
             )
 
             # 4. YES/NO 연동 처리 (Dependent questions cleansing)
-            q_info = conn.execute('SELECT type FROM ipd_questions WHERE id=?', (question_id,)).fetchone()
+            q_info = conn.execute('SELECT type FROM isd_questions WHERE id=?', (question_id,)).fetchone()
             if q_info and q_info['type'] == 'yes_no':
                 if _is_yes(str(value)):
                     _clear_na_from_dependents(conn, question_id, company_id, year)
@@ -641,7 +641,7 @@ def upload_evidence():
 
         with get_db() as conn:
             conn.execute('''
-                INSERT INTO ipd_evidence
+                INSERT INTO isd_evidence
                 (id, question_id, company_id, year, file_name, file_url, file_size, file_type)
                 VALUES (?,?,?,?,?,?,?,?)
             ''', (evidence_id, question_id, company_id, year,
@@ -668,7 +668,7 @@ def delete_evidence(evidence_id):
     try:
         with get_db() as conn:
             ev = conn.execute(
-                'SELECT * FROM ipd_evidence WHERE id=?', (evidence_id,)
+                'SELECT * FROM isd_evidence WHERE id=?', (evidence_id,)
             ).fetchone()
             if not ev:
                 return jsonify({'success': False, 'message': '존재하지 않는 파일입니다.'}), 404
@@ -680,7 +680,7 @@ def delete_evidence(evidence_id):
             if os.path.exists(file_path):
                 os.remove(file_path)
 
-            conn.execute('DELETE FROM ipd_evidence WHERE id=?', (evidence_id,))
+            conn.execute('DELETE FROM isd_evidence WHERE id=?', (evidence_id,))
             conn.commit()
 
         return jsonify({'success': True})
@@ -712,12 +712,12 @@ def review():
         _get_target_or_404(conn, company_id, year)
 
         all_questions = [dict(r) for r in conn.execute(
-            'SELECT * FROM ipd_questions ORDER BY sort_order'
+            'SELECT * FROM isd_questions ORDER BY sort_order'
         ).fetchall()]
         questions_dict = {q['id']: q for q in all_questions}
 
         answers = {r['question_id']: r['value'] for r in conn.execute(
-            'SELECT question_id, value FROM ipd_answers WHERE company_id=? AND year=? AND deleted_at IS NULL',
+            'SELECT question_id, value FROM isd_answers WHERE company_id=? AND year=? AND deleted_at IS NULL',
             (company_id, year)
         ).fetchall()}
 
@@ -748,7 +748,7 @@ def review():
                 pass
 
         session_row = conn.execute(
-            'SELECT * FROM ipd_sessions WHERE company_id=? AND year=?', (company_id, year)
+            'SELECT * FROM isd_sessions WHERE company_id=? AND year=?', (company_id, year)
         ).fetchone()
         session_info = dict(session_row) if session_row else {'completion_rate': 0, 'status': 'draft'}
 
@@ -772,7 +772,7 @@ def _calculate_ratios(conn, company_id, year, answers=None):
     """투자 및 인력 비율 계산"""
     if answers is None:
         answers = {r['question_id']: r['value'] for r in conn.execute(
-            'SELECT question_id, value FROM ipd_answers WHERE company_id=? AND year=? AND deleted_at IS NULL',
+            'SELECT question_id, value FROM isd_answers WHERE company_id=? AND year=? AND deleted_at IS NULL',
             (company_id, year)
         ).fetchall()}
 
@@ -821,7 +821,7 @@ def submit_disclosure():
 
     with get_db() as conn:
         session_row = conn.execute(
-            'SELECT completion_rate, status FROM ipd_sessions WHERE company_id=? AND year=?',
+            'SELECT completion_rate, status FROM isd_sessions WHERE company_id=? AND year=?',
             (company_id, year)
         ).fetchone()
 
@@ -834,11 +834,11 @@ def submit_disclosure():
             return redirect(url_for('disclosure.review'))
 
         conn.execute(
-            'UPDATE ipd_sessions SET status="submitted", updated_at=CURRENT_TIMESTAMP WHERE company_id=? AND year=?',
+            'UPDATE isd_sessions SET status="submitted", updated_at=CURRENT_TIMESTAMP WHERE company_id=? AND year=?',
             (company_id, year)
         )
         conn.execute(
-            'UPDATE ipd_targets SET status="submitted" WHERE company_id=? AND year=?',
+            'UPDATE isd_targets SET status="submitted" WHERE company_id=? AND year=?',
             (company_id, year)
         )
         conn.commit()
@@ -858,7 +858,7 @@ def confirm_disclosure():
         
     with get_db() as conn:
         session_row = conn.execute(
-            'SELECT completion_rate, status FROM ipd_sessions WHERE company_id=? AND year=?', (company_id, year)
+            'SELECT completion_rate, status FROM isd_sessions WHERE company_id=? AND year=?', (company_id, year)
         ).fetchone()
 
         if not session_row or session_row['status'] != 'submitted':
@@ -872,19 +872,19 @@ def confirm_disclosure():
         # 필수 증빙 검증: 답변 완료 항목 중 증빙 미업로드 항목 차단
         # (number 타입 항목은 금액이 0인 경우 증빙 불필요)
         req_questions = conn.execute(
-            'SELECT id, display_number, type FROM ipd_questions WHERE evidence_list IS NOT NULL'
+            'SELECT id, display_number, type FROM isd_questions WHERE evidence_list IS NOT NULL'
         ).fetchall()
         if req_questions:
             answered_ids = {r['question_id'] for r in conn.execute(
-                "SELECT question_id FROM ipd_answers WHERE company_id=? AND year=? AND status='completed'",
+                "SELECT question_id FROM isd_answers WHERE company_id=? AND year=? AND status='completed'",
                 (company_id, year)
             ).fetchall()}
             all_answers = {r['question_id']: r['value'] for r in conn.execute(
-                'SELECT question_id, value FROM ipd_answers WHERE company_id=? AND year=? AND deleted_at IS NULL',
+                'SELECT question_id, value FROM isd_answers WHERE company_id=? AND year=? AND deleted_at IS NULL',
                 (company_id, year)
             ).fetchall()}
             uploaded_ids = {r['question_id'] for r in conn.execute(
-                'SELECT DISTINCT question_id FROM ipd_evidence WHERE company_id=? AND year=?',
+                'SELECT DISTINCT question_id FROM isd_evidence WHERE company_id=? AND year=?',
                 (company_id, year)
             ).fetchall()}
             missing_ev = []
@@ -905,11 +905,11 @@ def confirm_disclosure():
                 return redirect(url_for('disclosure.review'))
 
         conn.execute(
-            'UPDATE ipd_sessions SET status="confirmed", updated_at=CURRENT_TIMESTAMP WHERE company_id=? AND year=?',
+            'UPDATE isd_sessions SET status="confirmed", updated_at=CURRENT_TIMESTAMP WHERE company_id=? AND year=?',
             (company_id, year)
         )
         conn.execute(
-            'UPDATE ipd_targets SET status="confirmed" WHERE company_id=? AND year=?',
+            'UPDATE isd_targets SET status="confirmed" WHERE company_id=? AND year=?',
             (company_id, year)
         )
         conn.commit()
@@ -928,11 +928,11 @@ def unconfirm_disclosure():
         
     with get_db() as conn:
         conn.execute(
-            'UPDATE ipd_sessions SET status="completed", updated_at=CURRENT_TIMESTAMP WHERE company_id=? AND year=?',
+            'UPDATE isd_sessions SET status="completed", updated_at=CURRENT_TIMESTAMP WHERE company_id=? AND year=?',
             (company_id, year)
         )
         conn.execute(
-            'UPDATE ipd_targets SET status="completed" WHERE company_id=? AND year=?',
+            'UPDATE isd_targets SET status="completed" WHERE company_id=? AND year=?',
             (company_id, year)
         )
         conn.commit()
@@ -950,11 +950,11 @@ def get_available_years(company_id):
     """특정 회사의 데이터가 존재하는 연도 목록 조회"""
     try:
         with get_db() as conn:
-            # ipd_targets와 ipd_sessions를 JOIN하여 연도와 상태 추출
+            # isd_targets와 isd_sessions를 JOIN하여 연도와 상태 추출
             rows = conn.execute('''
                 SELECT t.year, COALESCE(s.status, 'draft') as status
-                FROM ipd_targets t
-                LEFT JOIN ipd_sessions s ON t.company_id = s.company_id AND t.year = s.year
+                FROM isd_targets t
+                LEFT JOIN isd_sessions s ON t.company_id = s.company_id AND t.year = s.year
                 WHERE t.company_id = ?
                 ORDER BY t.year DESC
             ''', (company_id,)).fetchall()
@@ -976,8 +976,8 @@ def get_year_answers(company_id, year):
             query = '''
                 SELECT q.id as question_id, q.text as question_text, q.type as question_type,
                        q.display_number, q.category_id, q.category, a.value
-                FROM ipd_questions q
-                LEFT JOIN ipd_answers a ON q.id = a.question_id 
+                FROM isd_questions q
+                LEFT JOIN isd_answers a ON q.id = a.question_id 
                     AND a.company_id = ? AND a.year = ? AND a.deleted_at IS NULL
                 WHERE q.type != 'group'
             '''
@@ -1004,7 +1004,7 @@ def get_year_answers(company_id, year):
                 
             # 해당 연도의 세션 상태 조회
             session_row = conn.execute(
-                'SELECT status FROM ipd_sessions WHERE company_id=? AND year=?',
+                'SELECT status FROM isd_sessions WHERE company_id=? AND year=?',
                 (company_id, year)
             ).fetchone()
             year_status = session_row['status'] if session_row else 'draft'

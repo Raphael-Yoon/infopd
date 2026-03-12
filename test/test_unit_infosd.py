@@ -652,7 +652,7 @@ class InfosdUnitTest(PlaywrightTestBase):
                 conn.row_factory = sqlite3.Row
                 company_id = self._ensure_session()
                 row = conn.execute(
-                    'SELECT status FROM ipd_sessions WHERE company_id=? AND year=?',
+                    'SELECT status FROM isd_sessions WHERE company_id=? AND year=?',
                     (company_id, TEST_YEAR)
                 ).fetchone()
                 status = row['status'] if row else None
@@ -664,7 +664,7 @@ class InfosdUnitTest(PlaywrightTestBase):
     # ─── 6. Audit Trail ─────────────────────────────────────
 
     def test_audit_trail_recorded(self, result: UnitTestResult):
-        """6. 답변 저장 후 ipd_answer_history 이력 기록"""
+        """6. 답변 저장 후 isd_answer_history 이력 기록"""
         company_id = self._ensure_session()
         if not company_id:
             result.skip_test("세션 구성 실패")
@@ -677,7 +677,7 @@ class InfosdUnitTest(PlaywrightTestBase):
             try:
                 conn = sqlite3.connect(str(db_path))
                 n = conn.execute(
-                    "SELECT COUNT(*) FROM ipd_answer_history WHERE company_id=? AND year=?",
+                    "SELECT COUNT(*) FROM isd_answer_history WHERE company_id=? AND year=?",
                     (company_id, TEST_YEAR)
                 ).fetchone()[0]
                 conn.close()
@@ -741,7 +741,7 @@ class InfosdUnitTest(PlaywrightTestBase):
             try:
                 conn = sqlite3.connect(str(db_path))
                 row = conn.execute(
-                    "SELECT completion_rate FROM ipd_sessions WHERE company_id=? AND year=?",
+                    "SELECT completion_rate FROM isd_sessions WHERE company_id=? AND year=?",
                     (company_id, TEST_YEAR)
                 ).fetchone()
                 conn.close()

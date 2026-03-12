@@ -11,12 +11,12 @@ import json
 
 def upgrade(conn):
     conn.execute(
-        "UPDATE ipd_questions SET evidence_list = ? WHERE id = 'Q28'",
+        "UPDATE isd_questions SET evidence_list = ? WHERE id = 'Q28'",
         (json.dumps(["IT 인력 현황표", "조직도"], ensure_ascii=False),)
     )
 
 
 def downgrade(conn):
     conn.execute(
-        "UPDATE ipd_questions SET evidence_list = NULL WHERE id = 'Q28'"
+        "UPDATE isd_questions SET evidence_list = NULL WHERE id = 'Q28'"
     )

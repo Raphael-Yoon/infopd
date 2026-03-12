@@ -18,14 +18,14 @@ def upgrade(conn):
 
     for qid, text, help_text in updates:
         conn.execute(
-            "UPDATE ipd_questions SET text=?, help_text=? WHERE id=?",
+            "UPDATE isd_questions SET text=?, help_text=? WHERE id=?",
             (text, help_text, qid)
         )
 
     # 2. Q4, Q5, Q6 번호 스타일 정리
-    conn.execute("UPDATE ipd_questions SET text='유·무형자산 감가상각비' WHERE id='Q4'")
-    conn.execute("UPDATE ipd_questions SET text='정보보호 서비스 이용료·외주용역비' WHERE id='Q5'")
-    conn.execute("UPDATE ipd_questions SET text='내부 전담인력 인건비' WHERE id='Q6'")
+    conn.execute("UPDATE isd_questions SET text='유·무형자산 감가상각비' WHERE id='Q4'")
+    conn.execute("UPDATE isd_questions SET text='정보보호 서비스 이용료·외주용역비' WHERE id='Q5'")
+    conn.execute("UPDATE isd_questions SET text='내부 전담인력 인건비' WHERE id='Q6'")
 
     conn.commit()
 

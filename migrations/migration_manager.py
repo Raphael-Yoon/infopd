@@ -22,10 +22,17 @@ class MigrationManager:
         return conn
 
     def _ensure_migration_table(self):
-        """마이그레이션 이력 테이블 생성"""
+        """마이그레이션 이력 테이블 생성 (ipd_ → isd_ 자동 마이그레이션 포함)"""
         with self._get_connection() as conn:
+            # 기존 ipd_migration_history 테이블이 있으면 isd_migration_history로 rename
+            existing = conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='ipd_migration_history'"
+            ).fetchone()
+            if existing:
+                conn.execute('ALTER TABLE ipd_migration_history RENAME TO isd_migration_history')
+                conn.commit()
             conn.execute('''
-                CREATE TABLE IF NOT EXISTS ipd_migration_history (
+                CREATE TABLE IF NOT EXISTS isd_migration_history (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     version TEXT NOT NULL UNIQUE,
                     name TEXT NOT NULL,
@@ -40,7 +47,7 @@ class MigrationManager:
         """적용된 마이그레이션 목록 조회"""
         with self._get_connection() as conn:
             cursor = conn.execute('''
-                SELECT version FROM ipd_migration_history
+                SELECT version FROM isd_migration_history
                 WHERE status = 'success'
                 ORDER BY version
             ''')
@@ -70,7 +77,7 @@ class MigrationManager:
         """마이그레이션 실행 이력 기록"""
         with self._get_connection() as conn:
             conn.execute('''
-                INSERT OR REPLACE INTO ipd_migration_history (version, name, execution_time_ms, status)
+                INSERT OR REPLACE INTO isd_migration_history (version, name, execution_time_ms, status)
                 VALUES (?, ?, ?, ?)
             ''', (version, name, execution_time_ms, status))
             conn.commit()
@@ -78,7 +85,7 @@ class MigrationManager:
     def _remove_migration_record(self, version):
         """마이그레이션 이력 제거 (롤백 시)"""
         with self._get_connection() as conn:
-            conn.execute('DELETE FROM ipd_migration_history WHERE version = ?', (version,))
+            conn.execute('DELETE FROM isd_migration_history WHERE version = ?', (version,))
             conn.commit()
 
     def status(self):
