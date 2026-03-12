@@ -39,7 +39,7 @@
                 <i class="fas fa-undo me-2"></i>확정 취소
             </button>
         </form>
-        <button class="btn btn-premium-action px-4 py-2 rounded-pill shadow-sm fw-bold" onclick="alert('공시 자료 생성 기능은 현재 준비 중입니다 (양식 업데이트 대기 중).')">
+        <button class="btn btn-premium-action px-4 py-2 rounded-pill shadow-sm fw-bold" onclick="alert('공시 자료 생성 기능을 준비 중입니다. 곧 제공될 예정입니다.')">
             <i class="fas fa-file-export me-2"></i>공시 자료 생성
         </button>
         {% else %}
@@ -60,7 +60,7 @@
     <div class="row align-items-center">
         <div class="col-md-8">
             <h5 class="fw-bold mb-1">공시 자료 완성도</h5>
-            <p class="text-muted small mb-0">모든 항목이 100% 작성되어야 최종 제출이 가능합니다.</p>
+            <p class="text-muted small mb-0">모든 항목 작성 완료 후 최종 확정할 수 있습니다.</p>
         </div>
         <div class="col-md-4 text-md-end">
             <div class="stat-value text-gradient mb-1" style="justify-content: flex-end;">{{ overall }}%</div>
@@ -75,7 +75,7 @@
 <!-- 상세 검토 테이블 -->
 <div class="stat-card p-0 overflow-hidden border shadow-sm mb-5" style="background: var(--bg-surface);">
     <div class="p-4 border-bottom d-flex justify-content-between align-items-center" style="background: var(--bg-main);">
-        <h5 class="fw-bold mb-0">질문 항목별 작성 현황</h5>
+        <h5 class="fw-bold mb-0">공시 항목별 작성 현황</h5>
         <span class="badge border px-3 py-2 rounded-pill fw-bold" style="background: var(--bg-surface); color: var(--text-main);">{{ company.name }} | {{ year
             }}년</span>
     </div>
@@ -85,7 +85,7 @@
                 <tr>
                     <th class="ps-4 py-3" style="width: 80px; color: var(--text-muted);">ID</th>
                     <th class="py-3" style="color: var(--text-muted);">공시 항목 설명</th>
-                    <th class="py-3" style="width: 260px; color: var(--text-muted);">입력된 답변</th>
+                    <th class="py-3" style="width: 260px; color: var(--text-muted);">작성 내용</th>
                     <th class="py-3 text-center" style="width: 120px; color: var(--text-muted);">증빙</th>
                 </tr>
             </thead>
@@ -134,7 +134,7 @@
                                     </table>
                                 </div>
                             {% else %}
-                                <div class="text-muted small opacity-50 italic">데이터 없음</div>
+                                <div class="text-muted small opacity-50 italic">미입력</div>
                             {% endif %}
                         {% else %}
                             <div class="p-2 px-3 rounded-3 fw-bold border {% if q.type == 'number' or q.type == 'group' %}text-end{% endif %}" style="background: var(--bg-main); color: var(--text-main);">
@@ -167,8 +167,8 @@
     <div class="help-text d-flex align-items-center gap-3 p-4 mb-5" style="background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 12px;">
         <i class="fas fa-shield-alt fa-2x opacity-20" style="color: var(--text-muted);"></i>
         <div>
-            <h6 class="fw-bold mb-1" style="color: var(--text-main);">데이터 신뢰성 보장 안내</h6>
-            <p class="mb-0 small opacity-80" style="color: var(--text-muted);">최종 제출 전 모든 수치가 실제 증빙 자료와 일치하는지 반드시 확인하십시오. 제출 후 데이터 정합성 검증이 진행됩니다.</p>
+            <h6 class="fw-bold mb-1" style="color: var(--text-main);">확정 전 주의사항</h6>
+            <p class="mb-0 small opacity-80" style="color: var(--text-muted);">확정 전 모든 수치가 증빙 자료와 일치하는지 확인하세요. 확정 후에는 수정이 불가합니다.</p>
         </div>
     </div>
 </div>

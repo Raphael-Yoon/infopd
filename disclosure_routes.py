@@ -671,7 +671,7 @@ def delete_evidence(evidence_id):
                 'SELECT * FROM ipd_evidence WHERE id=?', (evidence_id,)
             ).fetchone()
             if not ev:
-                return jsonify({'success': False, 'message': '존재하지 않는 파일'}), 404
+                return jsonify({'success': False, 'message': '존재하지 않는 파일입니다.'}), 404
 
             # 실제 파일 삭제
             file_path = os.path.join(UPLOAD_FOLDER, ev['company_id'],
@@ -843,7 +843,7 @@ def submit_disclosure():
         )
         conn.commit()
 
-    flash('검토 요청이 완료되었습니다. 담당자 확정 후 최종 확정하세요.', 'success')
+    flash('검토 요청이 완료되었습니다. 담당자가 최종 확정하면 공시가 완료됩니다.', 'success')
     return redirect(url_for('disclosure.review'))
 
 
@@ -862,7 +862,7 @@ def confirm_disclosure():
         ).fetchone()
 
         if not session_row or session_row['status'] != 'submitted':
-            flash('검토 요청(submitted) 상태에서만 확정이 가능합니다.', 'warning')
+            flash('검토 요청 완료 후 확정할 수 있습니다.', 'warning')
             return redirect(url_for('disclosure.review'))
 
         if session_row['completion_rate'] < 100:
@@ -901,7 +901,7 @@ def confirm_disclosure():
                 if q['id'] not in uploaded_ids:
                     missing_ev.append(q['display_number'])
             if missing_ev:
-                flash(f'증빙 미업로드 항목이 있습니다: {", ".join(missing_ev)}', 'warning')
+                flash(f'다음 항목의 증빙 자료를 업로드해 주세요: {", ".join(missing_ev)}', 'warning')
                 return redirect(url_for('disclosure.review'))
 
         conn.execute(

@@ -850,7 +850,7 @@
         })
         .then(res => res.json())
         .then(data => {
-            if (!data.success) { alert('⚠️ 검증 오류: ' + data.message); }
+            if (!data.success) { alert('⚠️ 입력 오류: ' + data.message); }
             else { updateInvestmentSum(); if (['YES', 'NO', ''].includes(value)) { setTimeout(() => location.reload(), 120); } }
         });
     }
@@ -1010,7 +1010,7 @@
                         opt.value = item.year;
                         
                         let statusText = '대기';
-                        if (item.status === 'completed') statusText = '작성완료';
+                        if (item.status === 'completed') statusText = '작성 완료';
                         else if (item.status === 'in_progress') statusText = '작성중';
                         
                         opt.textContent = `${item.year}년 [${statusText}]`;
